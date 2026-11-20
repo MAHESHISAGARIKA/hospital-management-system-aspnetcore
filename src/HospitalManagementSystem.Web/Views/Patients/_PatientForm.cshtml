@@ -1,0 +1,15 @@
+@model HospitalManagementSystem.Web.Models.ViewModels.PatientEditViewModel
+<div class="row g-3">
+    <div class="col-md-6"><label asp-for="FirstName" class="form-label"></label><input asp-for="FirstName" class="form-control" /><span asp-validation-for="FirstName" class="text-danger"></span></div>
+    <div class="col-md-6"><label asp-for="LastName" class="form-label"></label><input asp-for="LastName" class="form-control" /><span asp-validation-for="LastName" class="text-danger"></span></div>
+    <div class="col-md-4"><label asp-for="DateOfBirth" class="form-label"></label><input asp-for="DateOfBirth" type="date" class="form-control" /><span asp-validation-for="DateOfBirth" class="text-danger"></span></div>
+    <div class="col-md-4"><label asp-for="Gender" class="form-label"></label><select asp-for="Gender" class="form-select"><option>Female</option><option>Male</option><option>Intersex</option><option>Unknown</option><option>Prefer not to say</option></select><span asp-validation-for="Gender" class="text-danger"></span></div>
+    <div class="col-md-4"><label asp-for="NIC" class="form-label"></label><input asp-for="NIC" class="form-control" /><span asp-validation-for="NIC" class="text-danger"></span></div>
+    <div class="col-md-4"><label asp-for="PhoneNumber" class="form-label"></label><input asp-for="PhoneNumber" class="form-control" /><span asp-validation-for="PhoneNumber" class="text-danger"></span></div>
+    <div class="col-md-4"><label asp-for="Email" class="form-label"></label><input asp-for="Email" type="email" class="form-control" /><span asp-validation-for="Email" class="text-danger"></span></div>
+    <div class="col-md-4"><label asp-for="BloodGroup" class="form-label"></label><select asp-for="BloodGroup" class="form-select"><option value="">Unknown / not known</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select></div>
+    <div class="col-md-12"><label asp-for="Address" class="form-label"></label><textarea asp-for="Address" class="form-control" rows="2"></textarea></div>
+    <div class="col-md-6"><label asp-for="EmergencyContactName" class="form-label"></label><input asp-for="EmergencyContactName" class="form-control" /></div>
+    <div class="col-md-6"><label asp-for="EmergencyContactPhone" class="form-label"></label><input asp-for="EmergencyContactPhone" class="form-control" /></div>
+</div>
+<div class="mt-3"></div>

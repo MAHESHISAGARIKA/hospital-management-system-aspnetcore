@@ -14,6 +14,8 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
 
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
 
+    public DbSet<PatientDocument> PatientDocuments => Set<PatientDocument>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -88,12 +90,45 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
             entity.Property(patient => patient.UpdatedAtUtc)
                 .IsRequired();
 
+            entity.Property(patient => patient.Gender)
+                .IsRequired()
+                .HasMaxLength(20)
+                .HasDefaultValue("Unknown");
+
+            entity.Property(patient => patient.NIC)
+                .HasMaxLength(30);
+
+            entity.Property(patient => patient.BloodGroup)
+                .HasMaxLength(10);
+
+            entity.Property(patient => patient.EmergencyContactName)
+                .HasMaxLength(100);
+
+            entity.Property(patient => patient.EmergencyContactPhone)
+                .HasMaxLength(32);
+
+            entity.Property(patient => patient.CreatedByUserId);
+            entity.Property(patient => patient.UpdatedByUserId);
+            entity.Property(patient => patient.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+            entity.Property(patient => patient.ConcurrencyToken)
+                .IsConcurrencyToken()
+                .IsRequired()
+                .HasDefaultValueSql("gen_random_uuid()");
+
             entity.HasIndex(patient => patient.PatientNumber)
                 .IsUnique()
                 .HasDatabaseName("ix_patients_patient_number");
 
             entity.HasIndex(patient => new { patient.LastName, patient.FirstName })
                 .HasDatabaseName("ix_patients_name");
+
+            entity.HasIndex(patient => new { patient.LastName, patient.FirstName, patient.DateOfBirth })
+                .HasDatabaseName("ix_patients_identity_match");
+
+            entity.HasIndex(patient => patient.NIC)
+                .HasDatabaseName("ix_patients_nic");
         });
 
         modelBuilder.Entity<Department>(entity =>
@@ -126,6 +161,27 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
             entity.HasIndex(department => department.Name)
                 .IsUnique()
                 .HasDatabaseName("ix_departments_name");
+        });
+
+        modelBuilder.Entity<PatientDocument>(entity =>
+        {
+            entity.ToTable("patient_documents");
+            entity.HasKey(document => document.Id);
+
+            entity.Property(document => document.OriginalFileName).IsRequired().HasMaxLength(255);
+            entity.Property(document => document.StoredFileName).IsRequired().HasMaxLength(255);
+            entity.Property(document => document.ContentType).IsRequired().HasMaxLength(100);
+            entity.Property(document => document.SizeBytes).IsRequired();
+            entity.Property(document => document.UploadedByUserId).IsRequired();
+            entity.Property(document => document.UploadedAtUtc).IsRequired();
+
+            entity.HasIndex(document => document.PatientId);
+            entity.HasIndex(document => document.StoredFileName).IsUnique();
+
+            entity.HasOne(document => document.Patient)
+                .WithMany()
+                .HasForeignKey(document => document.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

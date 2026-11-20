@@ -16,6 +16,13 @@ This document describes the complete relational architecture proposed for the Ho
 
 Identity users and roles, staff, doctor profiles, schedules, appointments, clinical records, laboratories, pharmacy, billing, admissions, documents, audit logs, and backups are architectural proposals only.
 
+### Implemented in Stage 4
+
+- The `patients` table includes demographic, active/archive, audit-user and GUID concurrency-token fields.
+- `patient_documents` stores document metadata and restrictively references `patients`.
+- Stored files remain outside the web root and source tree; only streamed download routes access them.
+- Electronic medical-record data structures are pending a later stage.
+
 ## Core conventions
 
 - PostgreSQL `uuid` values are used for primary and foreign keys.

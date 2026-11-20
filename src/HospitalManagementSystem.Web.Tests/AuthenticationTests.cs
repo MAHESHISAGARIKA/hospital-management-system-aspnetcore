@@ -317,7 +317,8 @@ public sealed class AuthenticationTestApplication : WebApplicationFactory<Progra
                 services.Remove(descriptor);
             }
             services.AddDbContext<HospitalDbContext>(options =>
-                options.UseInMemoryDatabase("HospitalAuthenticationTests"));
+                options.UseInMemoryDatabase("HospitalAuthenticationTests")
+                    .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning)));
         });
         builder.UseSetting("ConnectionStrings:HospitalDatabase", "Host=localhost;Database=test;Username=test;Password=test");
     }

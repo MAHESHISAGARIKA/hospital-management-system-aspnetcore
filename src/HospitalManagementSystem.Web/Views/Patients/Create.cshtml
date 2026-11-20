@@ -1,0 +1,13 @@
+@model HospitalManagementSystem.Web.Models.ViewModels.PatientEditViewModel
+@{
+    ViewData["Title"] = "Register patient";
+}
+
+<h1 class="h3 mb-3">Register patient</h1>
+@if (TempData["DuplicateWarning"] is string warning) { <div class="alert alert-warning">@warning</div> }
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<form asp-action="Create" method="post">
+    @await Html.PartialAsync("_PatientForm", Model)
+    <button type="submit" class="btn btn-primary">Save patient</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>

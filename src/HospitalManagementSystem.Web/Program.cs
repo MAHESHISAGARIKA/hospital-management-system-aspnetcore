@@ -2,6 +2,7 @@ using HospitalManagementSystem.Web.Authorization;
 using HospitalManagementSystem.Web.Data;
 using HospitalManagementSystem.Web.Models;
 using HospitalManagementSystem.Web.Services;
+using HospitalManagementSystem.Web.Services.Patients;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -73,6 +74,8 @@ builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IPatientService, PatientService>();
+builder.Services.AddScoped<IPatientNumberGenerator, PatientNumberGenerator>();
 
 var app = builder.Build();
 
