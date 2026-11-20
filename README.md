@@ -57,8 +57,9 @@ Open the URL displayed in the terminal.
 - Stage 1: MVC foundation completed.
 - Stage 2: Initial `Patient` and `Department` EF foundation completed.
 - Stage 3: Identity, login/logout, password change, role authorization, administrator user management and audit logging implemented.
+- Stage 4: Patient directory, registration, profile, editing, archive/reactivation, duplicate warnings and secured document metadata/download routes implemented. Complete EMR workflows remain pending.
 
-Patient, clinical, appointment and pharmacy modules are not implemented yet.
+Clinical, appointment, laboratory, pharmacy, billing, admission, staffing and reporting modules are not implemented yet.
 
 ## Authentication setup
 
@@ -73,6 +74,7 @@ Apply migrations manually only after review:
 ```bash
 dotnet ef database update InitialDatabaseFoundation --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext
 dotnet ef database update AddIdentityAndAccessControl --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext
+dotnet ef database update AddPatientManagement --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext
 ```
 
 Create the first Administrator locally after migrations:
@@ -105,3 +107,14 @@ For deployments, persist ASP.NET Core Data Protection keys outside the applicati
 ## Security
 
 Only fictional demonstration data will be used. Credentials and sensitive information must not be committed to the repository.
+
+## Patient Document Management
+
+Configure private patient documents with a persistent location outside `wwwroot`:
+
+```bash
+dotnet user-secrets set "PatientDocuments:StorageRoot" "C:\\HospitalManagementData\\PatientDocuments" --project src/HospitalManagementSystem.Web
+dotnet user-secrets set "PatientDocuments:MaxFileSizeBytes" "10485760" --project src/HospitalManagementSystem.Web
+```
+
+Do not deploy document uploads publicly without private persistent storage and malware scanning. Production storage should use encrypted persistent volumes and restricted OS/application permissions.

@@ -1,0 +1,39 @@
+@model HospitalManagementSystem.Web.Models.ViewModels.PatientSearchViewModel
+@{
+    ViewData["Title"] = "Patient directory";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Patient directory</h1>
+    @if (User.IsInRole("Administrator") || User.IsInRole("Receptionist"))
+    {
+        <a asp-action="Create" class="btn btn-primary">Register patient</a>
+    }
+</div>
+
+@if (TempData["StatusMessage"] is string message)
+{
+    <div class="alert alert-success">@message</div>
+}
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-5"><input name="Search" value="@Model.Search" class="form-control" placeholder="Patient number or name" /></div>
+    <div class="col-md-3"><select name="Gender" class="form-select"><option value="">All genders</option>@foreach (var gender in new[] { "Female", "Male", "Intersex", "Unknown", "Prefer not to say" }) { <option value="@gender" selected="@(Model.Gender == gender)">@gender</option> }</select></div>
+    <div class="col-md-2"><select name="IsActive" class="form-select"><option value="">All statuses</option><option value="true" selected="@(Model.IsActive == true)">Active</option><option value="false" selected="@(Model.IsActive == false)">Archived</option></select></div>
+    <div class="col-md-2"><button class="btn btn-outline-primary w-100" type="submit">Search</button></div>
+</form>
+
+@if (Model.Patients.Count == 0)
+{
+    <div class="alert alert-light border">No patients matched the selected criteria.</div>
+}
+else
+{
+    <div class="table-responsive"><table class="table table-striped align-middle"><thead><tr><th>Patient number</th><th>Name</th><th>Date of birth</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var patient in Model.Patients)
+    {
+        <tr><td>@patient.PatientNumber</td><td>@patient.FirstName @patient.LastName</td><td>@patient.DateOfBirth.ToString("yyyy-MM-dd")</td><td><span class="badge @(patient.IsActive ? "text-bg-success" : "text-bg-secondary")">@(patient.IsActive ? "Active" : "Archived")</span></td><td><a asp-action="Details" asp-route-id="@patient.Id" class="btn btn-sm btn-outline-primary">View</a></td></tr>
+    }
+    </tbody></table></div>
+    <p class="text-muted">@Model.TotalCount patient(s)</p>
+}

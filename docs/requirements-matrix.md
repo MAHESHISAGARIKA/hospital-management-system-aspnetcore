@@ -4,8 +4,8 @@ This document maps the proposed Hospital Management System requirements to futur
 
 ## Current implementation status
 
-- **Implemented:** ASP.NET Core MVC shell, existing homepage, PostgreSQL connection configuration through User Secrets, EF Core/Npgsql registration, initial `Patient` and `Department` entities, ASP.NET Core Identity, seven hospital roles, login/logout, password change, Administrator user management, role authorization and security audit logging.
-- **Not implemented:** Patient workflows, department workflows and the clinical, appointment, laboratory, pharmacy, billing, admission, staffing and reporting modules listed below.
+- **Implemented:** ASP.NET Core MVC shell, homepage, PostgreSQL/User Secrets configuration, EF Core/Npgsql, Identity and seven roles, login/logout, password change, administrator management, audit logging, and Stage 4 patient directory, registration, profile, editing, archival/reactivation, duplicate warnings, private document metadata/download routes and the pending-EMR medical-history placeholder.
+- **Not implemented:** Complete diagnoses, prescriptions, treatments, appointment scheduling, laboratory workflows, pharmacy, billing, admission, staffing and reporting modules.
 
 | ID | Requirement | Proposed module | Acceptance criteria | Future tests |
 |---|---|---|---|---|
