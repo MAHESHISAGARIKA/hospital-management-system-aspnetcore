@@ -1,0 +1,48 @@
+@model IReadOnlyCollection<HospitalManagementSystem.Web.Models.ViewModels.UserListItemViewModel>
+@{
+    ViewData["Title"] = "User management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">User management</h1>
+    <a asp-action="Create" class="btn btn-primary">Create staff user</a>
+</div>
+
+@if (TempData["StatusMessage"] is string statusMessage)
+{
+    <div class="alert alert-success">@statusMessage</div>
+}
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr><th>Email</th><th>Roles</th><th>Status</th><th>Password change</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Email</td>
+                <td>@string.Join(", ", user.Roles)</td>
+                <td>
+                    @if (user.IsEnabled) { <span class="badge text-bg-success">Active</span> }
+                    else { <span class="badge text-bg-secondary">Disabled</span> }
+                </td>
+                <td>@(user.RequirePasswordChange ? "Required" : "Not required")</td>
+                <td>
+                    <a asp-action="Roles" asp-route-id="@user.Id" class="btn btn-sm btn-outline-primary">Roles</a>
+                    <form asp-action="SetEnabled" asp-route-id="@user.Id" method="post" class="d-inline">
+                        <input type="hidden" name="isEnabled" value="@(!user.IsEnabled)" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            @(!user.IsEnabled ? "Activate" : "Deactivate")
+                        </button>
+                    </form>
+                    <form asp-action="GeneratePasswordReset" asp-route-id="@user.Id" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-warning">Reset token</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

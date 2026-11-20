@@ -1,4 +1,3 @@
-
 # Hospital Management System
 
 A web-based Hospital Management System built with C# and ASP.NET Core MVC.
@@ -55,9 +54,53 @@ Open the URL displayed in the terminal.
 
 ## Development Status
 
-Stage 1: Initial project setup completed.
+- Stage 1: MVC foundation completed.
+- Stage 2: Initial `Patient` and `Department` EF foundation completed.
+- Stage 3: Identity, login/logout, password change, role authorization, administrator user management and audit logging implemented.
 
-The hospital management modules are planned for subsequent development stages.
+Patient, clinical, appointment and pharmacy modules are not implemented yet.
+
+## Authentication setup
+
+Configure the local PostgreSQL connection using ASP.NET Core User Secrets:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:HospitalDatabase" "Host=localhost;Database=hospital_management_dev;Username=hospital_app_user;Password=<password>" --project src/HospitalManagementSystem.Web
+```
+
+Apply migrations manually only after review:
+
+```bash
+dotnet ef database update InitialDatabaseFoundation --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext
+dotnet ef database update AddIdentityAndAccessControl --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext
+```
+
+Create the first Administrator locally after migrations:
+
+```bash
+dotnet run --project src/HospitalManagementSystem.Web -- --bootstrap-first-admin
+```
+
+The bootstrap reads the password without echo. It does not accept passwords as command-line arguments and refuses if an active Administrator or the email already exists.
+
+No Administrator account or password is seeded automatically.
+
+## Run and test
+
+```bash
+dotnet restore
+dotnet build
+dotnet run --project src/HospitalManagementSystem.Web
+dotnet test src/HospitalManagementSystem.Web.Tests/HospitalManagementSystem.Web.Tests.csproj
+```
+
+Open `/Account/Login`. `/Dashboard` requires authentication and `/Users` requires the Administrator role.
+
+The automated suite uses EF Core InMemory isolation and never resets or writes to `hospital_management_dev`. Browser-delivered password reset email remains unimplemented until an email provider is configured.
+
+## Persistent security configuration
+
+For deployments, persist ASP.NET Core Data Protection keys outside the application directory using a protected key store or an approved cloud key store. Losing keys invalidates authentication cookies and protected data.
 
 ## Security
 
