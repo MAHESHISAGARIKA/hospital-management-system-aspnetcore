@@ -1,0 +1,22 @@
+@model HospitalManagementSystem.Web.Models.ViewModels.UpdateUserRolesViewModel
+@{
+    ViewData["Title"] = "Change roles";
+}
+
+<h1 class="h3 mb-3">Change roles for @Model.Email</h1>
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<form asp-action="Roles" asp-controller="Users" method="post">
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="Email" type="hidden" />
+    @foreach (var role in Model.AllowedRoles)
+    {
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="SelectedRoles" value="@role"
+                   @(Model.SelectedRoles.Contains(role, StringComparer.Ordinal) ? "checked" : null) />
+            <label class="form-check-label">@role</label>
+        </div>
+    }
+    <button type="submit" class="btn btn-primary mt-3">Save roles</button>
+    <a asp-action="Index" class="btn btn-outline-secondary mt-3">Cancel</a>
+</form>

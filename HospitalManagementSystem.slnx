@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/HospitalManagementSystem.Web.Tests/HospitalManagementSystem.Web.Tests.csproj" />
     <Project Path="src/HospitalManagementSystem.Web/HospitalManagementSystem.Web.csproj" />
   </Folder>
 </Solution>

@@ -1,5 +1,10 @@
+using HospitalManagementSystem.Web.Authorization;
 using HospitalManagementSystem.Web.Data;
+using HospitalManagementSystem.Web.Models;
+using HospitalManagementSystem.Web.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +22,58 @@ if (string.IsNullOrWhiteSpace(hospitalDatabaseConnection))
 builder.Services.AddDbContext<HospitalDbContext>(options =>
     options.UseNpgsql(hospitalDatabaseConnection));
 
+builder.Services
+    .AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
+    {
+        options.User.RequireUniqueEmail = true;
+        options.User.AllowedUserNameCharacters =
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+
+        options.Password.RequiredLength = 12;
+        options.Password.RequiredUniqueChars = 4;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = true;
+
+        options.Lockout.AllowedForNewUsers = true;
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+
+        options.SignIn.RequireConfirmedEmail = false;
+        options.Tokens.PasswordResetTokenProvider = TokenOptions.DefaultProvider;
+    })
+    .AddEntityFrameworkStores<HospitalDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+{
+    options.TokenLifespan = TimeSpan.FromMinutes(30);
+});
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "HospitalManagement.Auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    options.SlidingExpiration = true;
+});
+
+builder.Services.Configure<SecurityStampValidatorOptions>(options =>
+{
+    options.ValidationInterval = TimeSpan.FromSeconds(30);
+});
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -29,8 +86,87 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
+
+using (var scope = app.Services.CreateScope())
+{
+    if (!app.Environment.IsEnvironment("Testing"))
+    {
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+        await RoleInitializer.InitializeAsync(roleManager);
+    }
+
+    if (app.Environment.IsDevelopment() &&
+        args.Any(argument => string.Equals(argument, "--bootstrap-first-admin", StringComparison.Ordinal)))
+    {
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var auditLogService = scope.ServiceProvider.GetRequiredService<IAuditLogService>();
+
+        var adminUsers = await userManager.GetUsersInRoleAsync(HospitalRoles.Administrator);
+        var activeAdmin = adminUsers.FirstOrDefault(user => user.IsEnabled && !user.LockoutEnd.HasValue);
+        if (activeAdmin is not null)
+        {
+            throw new InvalidOperationException("First Administrator bootstrap refused: an active Administrator already exists.");
+        }
+
+        Console.Write("Initial Administrator email: ");
+        var email = Console.ReadLine()?.Trim();
+        var password = ConsoleSecretReader.Read("Initial Administrator password: ");
+        var passwordConfirmation = ConsoleSecretReader.Read("Confirm Initial Administrator password: ");
+
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+        {
+            throw new InvalidOperationException("A valid email address is required for Administrator bootstrap.");
+        }
+
+        if (!string.Equals(password, passwordConfirmation, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Administrator bootstrap passwords do not match.");
+        }
+
+        var existingUser = await userManager.FindByEmailAsync(email);
+        if (existingUser is not null)
+        {
+            throw new InvalidOperationException("Administrator bootstrap refused: that email already belongs to an existing account.");
+        }
+
+        var admin = new ApplicationUser
+        {
+            Id = Guid.CreateVersion7(),
+            UserName = email,
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            NormalizedUserName = email.ToUpperInvariant(),
+            EmailConfirmed = true,
+            IsEnabled = true,
+            RequirePasswordChange = false,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow
+        };
+
+        var createResult = await userManager.CreateAsync(admin, password);
+        if (!createResult.Succeeded)
+        {
+            throw new InvalidOperationException("Administrator bootstrap failed due to password or account validation requirements.");
+        }
+
+        var roleResult = await userManager.AddToRoleAsync(admin, HospitalRoles.Administrator);
+        if (!roleResult.Succeeded)
+        {
+            await userManager.DeleteAsync(admin);
+            throw new InvalidOperationException("Administrator bootstrap could not assign the Administrator role.");
+        }
+
+        await auditLogService.WriteAsync(
+            "FirstAdministratorCreated",
+            admin.Id,
+            admin.Id,
+            "Created through the deliberate local bootstrap procedure.");
+
+        Console.WriteLine("First Administrator account created successfully.");
+    }
+}
 
 app.MapStaticAssets();
 
