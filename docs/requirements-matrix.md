@@ -5,6 +5,8 @@ This document maps the proposed Hospital Management System requirements to futur
 ## Current implementation status
 
 - **Implemented:** ASP.NET Core MVC shell, homepage, PostgreSQL/User Secrets configuration, EF Core/Npgsql, Identity and seven roles, login/logout, password change, administrator management, audit logging, and Stage 4 patient directory, registration, profile, editing, archival/reactivation, duplicate warnings, private document metadata/download routes and the pending-EMR medical-history placeholder.
+- **Stage 5 implemented:** Doctor and DoctorSchedule entities, department assignment, doctor directory, registration/edit/active status, schedule CRUD/deactivation, account-link services and least-privilege MVC routes. The Asia/Colombo timezone is documented as schedule display/entry context; complete appointment availability remains pending.
+- **Schedule limitation:** Overnight sessions are rejected. Holidays, leave and one-off unavailability are not modeled.
 - **Not implemented:** Complete diagnoses, prescriptions, treatments, appointment scheduling, laboratory workflows, pharmacy, billing, admission, staffing and reporting modules.
 
 | ID | Requirement | Proposed module | Acceptance criteria | Future tests |

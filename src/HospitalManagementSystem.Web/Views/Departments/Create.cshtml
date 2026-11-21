@@ -1,0 +1,5 @@
+@model HospitalManagementSystem.Web.Models.Department
+@{ ViewData["Title"] = "Create department"; }
+<h1 class="h3 mb-3">Create department</h1>
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<form asp-action="Create" method="post"><div class="mb-3"><label asp-for="DepartmentCode" class="form-label"></label><input asp-for="DepartmentCode" class="form-control" /></div><div class="mb-3"><label asp-for="Name" class="form-label"></label><input asp-for="Name" class="form-control" /></div><button type="submit" class="btn btn-primary">Create</button><a asp-action="Index" class="btn btn-outline-secondary">Cancel</a></form>

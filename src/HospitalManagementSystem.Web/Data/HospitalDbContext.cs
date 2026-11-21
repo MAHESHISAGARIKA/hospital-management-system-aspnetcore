@@ -16,6 +16,10 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
 
     public DbSet<PatientDocument> PatientDocuments => Set<PatientDocument>();
 
+    public DbSet<Doctor> Doctors => Set<Doctor>();
+
+    public DbSet<DoctorSchedule> DoctorSchedules => Set<DoctorSchedule>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -154,6 +158,10 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
             entity.Property(department => department.UpdatedAtUtc)
                 .IsRequired();
 
+            entity.Property(department => department.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
             entity.HasIndex(department => department.DepartmentCode)
                 .IsUnique()
                 .HasDatabaseName("ix_departments_department_code");
@@ -182,6 +190,106 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
                 .WithMany()
                 .HasForeignKey(document => document.PatientId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Doctor>(entity =>
+        {
+            entity.ToTable("doctors");
+
+            entity.HasKey(doctor => doctor.Id);
+            entity.Property(doctor => doctor.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(doctor => doctor.DoctorNumber)
+                .IsRequired()
+                .HasMaxLength(30);
+
+            entity.HasIndex(doctor => doctor.DoctorNumber)
+                .IsUnique()
+                .HasDatabaseName("ix_doctors_doctor_number");
+
+            entity.Property(doctor => doctor.FirstName)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(doctor => doctor.LastName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(doctor => doctor.RegistrationNumber)
+                .IsRequired()
+                .HasMaxLength(50);
+            // Normalized registration number (uppercase, no spaces) for uniqueness
+            entity.HasIndex(doctor => doctor.RegistrationNumber)
+                .IsUnique()
+                .HasDatabaseName("ix_doctors_registration_number");
+
+            entity.Property(doctor => doctor.Specialization)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(doctor => doctor.Qualifications)
+                .HasMaxLength(200);
+            entity.Property(doctor => doctor.PhoneNumber)
+                .HasMaxLength(32);
+            entity.Property(doctor => doctor.Email)
+                .HasMaxLength(254);
+
+            entity.Property(doctor => doctor.DepartmentId)
+                .IsRequired();
+            entity.HasOne(doctor => doctor.Department)
+                .WithMany()
+                .HasForeignKey(doctor => doctor.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.Property(doctor => doctor.ApplicationUserId);
+            entity.HasOne(doctor => doctor.ApplicationUser)
+                .WithOne()
+                .HasForeignKey<Doctor>(doctor => doctor.ApplicationUserId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(doctor => doctor.ApplicationUserId)
+                .IsUnique()
+                .HasFilter(null) // allow multiple nulls
+                .HasDatabaseName("ix_doctors_application_user_id");
+
+            entity.Property(doctor => doctor.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+            entity.Property(doctor => doctor.CreatedAtUtc)
+                .IsRequired();
+            entity.Property(doctor => doctor.UpdatedAtUtc)
+                .IsRequired();
+            entity.Property(doctor => doctor.CreatedByUserId);
+            entity.Property(doctor => doctor.UpdatedByUserId);
+
+            entity.Property(doctor => doctor.ConcurrencyToken)
+                .IsConcurrencyToken()
+                .IsRequired()
+                .HasDefaultValueSql("gen_random_uuid()");
+        });
+
+        modelBuilder.Entity<DoctorSchedule>(entity =>
+        {
+            entity.ToTable("doctor_schedules");
+            entity.HasKey(schedule => schedule.Id);
+
+            entity.Property(schedule => schedule.Id).ValueGeneratedOnAdd();
+            entity.Property(schedule => schedule.DayOfWeek).IsRequired();
+            entity.Property(schedule => schedule.StartTime).IsRequired();
+            entity.Property(schedule => schedule.EndTime).IsRequired();
+            entity.Property(schedule => schedule.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(schedule => schedule.CreatedAtUtc).IsRequired();
+            entity.Property(schedule => schedule.UpdatedAtUtc).IsRequired();
+            entity.Property(schedule => schedule.ConcurrencyToken)
+                .IsConcurrencyToken()
+                .IsRequired()
+                .HasDefaultValueSql("gen_random_uuid()");
+
+            entity.HasOne(schedule => schedule.Doctor)
+                .WithMany()
+                .HasForeignKey(schedule => schedule.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(schedule => new { schedule.DoctorId, schedule.DayOfWeek, schedule.IsActive });
         });
     }
 }

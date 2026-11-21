@@ -2,6 +2,7 @@ using HospitalManagementSystem.Web.Authorization;
 using HospitalManagementSystem.Web.Data;
 using HospitalManagementSystem.Web.Models;
 using HospitalManagementSystem.Web.Services;
+using HospitalManagementSystem.Web.Services.Doctors;
 using HospitalManagementSystem.Web.Services.Patients;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -76,6 +77,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IPatientNumberGenerator, PatientNumberGenerator>();
+builder.Services.AddScoped<IDoctorService, DoctorService>();
+builder.Services.AddScoped<IDoctorScheduleService, DoctorScheduleService>();
+builder.Services.AddScoped<IDoctorNumberGenerator, DoctorNumberGenerator>();
 
 var app = builder.Build();
 
