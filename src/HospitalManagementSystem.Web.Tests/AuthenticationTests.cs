@@ -293,6 +293,8 @@ public sealed class AuthenticationCollection
 
 public sealed class AuthenticationTestApplication : WebApplicationFactory<Program>
 {
+    private readonly string _databaseName = $"HospitalTests-{Guid.NewGuid():N}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -317,7 +319,7 @@ public sealed class AuthenticationTestApplication : WebApplicationFactory<Progra
                 services.Remove(descriptor);
             }
             services.AddDbContext<HospitalDbContext>(options =>
-                options.UseInMemoryDatabase("HospitalAuthenticationTests")
+                options.UseInMemoryDatabase(_databaseName)
                     .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning)));
         });
         builder.UseSetting("ConnectionStrings:HospitalDatabase", "Host=localhost;Database=test;Username=test;Password=test");

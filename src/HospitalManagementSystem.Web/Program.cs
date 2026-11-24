@@ -2,6 +2,7 @@ using HospitalManagementSystem.Web.Authorization;
 using HospitalManagementSystem.Web.Data;
 using HospitalManagementSystem.Web.Models;
 using HospitalManagementSystem.Web.Services;
+using HospitalManagementSystem.Web.Services.Appointments;
 using HospitalManagementSystem.Web.Services.Doctors;
 using HospitalManagementSystem.Web.Services.Patients;
 using Microsoft.AspNetCore.Identity;
@@ -53,6 +54,15 @@ builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
     options.TokenLifespan = TimeSpan.FromMinutes(30);
 });
 
+builder.Services.AddOptions<AppointmentSchedulingOptions>()
+    .BindConfiguration("AppointmentScheduling")
+    .Validate(options => options.StartIntervalMinutes > 0 && 60 % options.StartIntervalMinutes == 0,
+        "Appointment start interval must be a positive divisor of 60.")
+    .Validate(options => options.AllowedDurationMinutes.Length > 0 &&
+                         options.AllowedDurationMinutes.All(duration => duration > 0 && duration <= 240),
+        "Appointment durations must contain supported positive values.")
+    .ValidateOnStart();
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "HospitalManagement.Auth";
@@ -80,6 +90,8 @@ builder.Services.AddScoped<IPatientNumberGenerator, PatientNumberGenerator>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
 builder.Services.AddScoped<IDoctorScheduleService, DoctorScheduleService>();
 builder.Services.AddScoped<IDoctorNumberGenerator, DoctorNumberGenerator>();
+builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+builder.Services.AddScoped<IAppointmentNumberGenerator, AppointmentNumberGenerator>();
 
 var app = builder.Build();
 

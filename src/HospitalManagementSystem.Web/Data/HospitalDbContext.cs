@@ -20,6 +20,8 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
 
     public DbSet<DoctorSchedule> DoctorSchedules => Set<DoctorSchedule>();
 
+    public DbSet<Appointment> Appointments => Set<Appointment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -290,6 +292,58 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
                 .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(schedule => new { schedule.DoctorId, schedule.DayOfWeek, schedule.IsActive });
+        });
+
+        modelBuilder.Entity<Appointment>(entity =>
+        {
+            entity.ToTable("appointments", table =>
+            {
+                table.HasCheckConstraint("CK_appointments_valid_interval", "\"EndAtUtc\" > \"StartAtUtc\"");
+                table.HasCheckConstraint("CK_appointments_valid_status", "\"Status\" IN ('Scheduled', 'CheckedIn', 'Completed', 'Cancelled', 'Missed')");
+            });
+
+            entity.HasKey(appointment => appointment.Id);
+            entity.Property(appointment => appointment.Id).ValueGeneratedOnAdd();
+            entity.Property(appointment => appointment.AppointmentNumber).IsRequired().HasMaxLength(30);
+            entity.Property(appointment => appointment.ReasonForVisit).HasMaxLength(300);
+            entity.Property(appointment => appointment.Notes).HasMaxLength(500);
+            entity.Property(appointment => appointment.CancellationReason).HasMaxLength(300);
+            entity.Property(appointment => appointment.IdempotencyKey).IsRequired().HasMaxLength(64);
+            entity.Property(appointment => appointment.BookingRequestFingerprint).HasMaxLength(64);
+            entity.Property(appointment => appointment.Status).HasConversion<string>().IsRequired().HasMaxLength(20);
+            entity.Property(appointment => appointment.StartAtUtc).IsRequired();
+            entity.Property(appointment => appointment.EndAtUtc).IsRequired();
+            entity.Property(appointment => appointment.CreatedAtUtc).IsRequired();
+            entity.Property(appointment => appointment.UpdatedAtUtc).IsRequired();
+            entity.Property(appointment => appointment.CreatedByUserId).IsRequired();
+            entity.Property(appointment => appointment.UpdatedByUserId).IsRequired();
+            entity.Property(appointment => appointment.ConcurrencyToken)
+                .IsConcurrencyToken()
+                .IsRequired()
+                .HasDefaultValueSql("gen_random_uuid()");
+
+            entity.HasOne(appointment => appointment.Patient)
+                .WithMany()
+                .HasForeignKey(appointment => appointment.PatientId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(appointment => appointment.Doctor)
+                .WithMany()
+                .HasForeignKey(appointment => appointment.DoctorId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(appointment => appointment.Department)
+                .WithMany()
+                .HasForeignKey(appointment => appointment.DepartmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(appointment => appointment.AppointmentNumber)
+                .IsUnique()
+                .HasDatabaseName("ix_appointments_appointment_number");
+            entity.HasIndex(appointment => new { appointment.CreatedByUserId, appointment.IdempotencyKey })
+                .IsUnique()
+                .HasDatabaseName("ix_appointments_actor_idempotency_key");
+            entity.HasIndex(appointment => new { appointment.DoctorId, appointment.StartAtUtc });
+            entity.HasIndex(appointment => new { appointment.PatientId, appointment.StartAtUtc });
+            entity.HasIndex(appointment => new { appointment.Status, appointment.StartAtUtc });
         });
     }
 }
