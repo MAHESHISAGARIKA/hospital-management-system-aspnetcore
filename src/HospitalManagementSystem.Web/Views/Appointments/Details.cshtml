@@ -8,6 +8,13 @@
 <div class="d-flex justify-content-between align-items-center mb-3"><div><h1 class="h3 mb-1">@appointment.AppointmentNumber</h1><span class="badge text-bg-light border">@appointment.Status</span></div>@if ((User.IsInRole("Administrator") || User.IsInRole("Receptionist")) && appointment.Status == HospitalManagementSystem.Web.Models.AppointmentStatus.Scheduled) { <a asp-action="Edit" asp-route-id="@appointment.Id" class="btn btn-primary">Reschedule</a> }</div>
 <div class="card"><div class="card-body"><dl class="row mb-0"><dt class="col-sm-3">Patient</dt><dd class="col-sm-9">@appointment.Patient.PatientNumber - @appointment.Patient.FirstName @appointment.Patient.LastName</dd><dt class="col-sm-3">Doctor</dt><dd class="col-sm-9">Dr. @appointment.Doctor.FirstName @appointment.Doctor.LastName</dd><dt class="col-sm-3">Department</dt><dd class="col-sm-9">@appointment.Department.Name</dd><dt class="col-sm-3">Time</dt><dd class="col-sm-9">@Model.StartAtLocal.ToString("dddd, dd MMM yyyy HH:mm") - @Model.EndAtLocal.ToString("HH:mm") Asia/Colombo</dd><dt class="col-sm-3">Reason</dt><dd class="col-sm-9">@(appointment.ReasonForVisit ?? "Not provided")</dd><dt class="col-sm-3">Administrative notes</dt><dd class="col-sm-9">@(appointment.Notes ?? "None")</dd>@if (appointment.Status == HospitalManagementSystem.Web.Models.AppointmentStatus.Cancelled) { <dt class="col-sm-3">Cancellation reason</dt><dd class="col-sm-9">@appointment.CancellationReason</dd> }</dl></div></div>
 
+@if (User.IsInRole("Doctor") && appointment.Doctor.IsActive &&
+    appointment.Doctor.ApplicationUserId?.ToString() == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value &&
+    appointment.Status is HospitalManagementSystem.Web.Models.AppointmentStatus.CheckedIn or HospitalManagementSystem.Web.Models.AppointmentStatus.Completed)
+{
+    <a class="btn btn-outline-primary mt-3" asp-controller="MedicalRecords" asp-action="Index">Medical records</a>
+}
+
 @if (Model.AllowedNextStatuses.Count > 0)
 {
     <div class="d-flex flex-wrap gap-2 mt-3">

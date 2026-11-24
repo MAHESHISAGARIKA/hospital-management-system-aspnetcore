@@ -14,7 +14,7 @@ This document describes the complete relational architecture proposed for the Ho
 
 ### Implemented after the initial foundation
 
-Identity users and roles, audit entries, patient documents, doctors, doctor schedules and appointments are implemented in later stages and tracked in their sections below. Staff management, complete EMR, laboratory, pharmacy, billing, admissions, reporting and backup automation remain proposed.
+Identity users and roles, audit entries, patient documents, doctors, doctor schedules, appointments and clinical records are implemented in later stages and tracked in their sections below. Staff management, complete EMR, laboratory, pharmacy, billing, admissions, reporting and backup automation remain proposed.
 
 ### Implemented in Stage 4
 
@@ -82,6 +82,14 @@ The implementation does not define clinical completion or billing consequences. 
 Availability rounds schedule openings up to the next configured clock boundary and offers only future starts whose full duration fits. Weekly schedules do not model holidays, leave, or overnight appointments.
 
 Administrators and Receptionists can book, reschedule, cancel and apply ordinary status transitions. A Doctor can see appointments for their linked profile and check in their own scheduled appointments. Appointment availability and eligible-doctor endpoints are restricted to Administrators and Receptionists and return slot times or minimal doctor choices. The directory and calendar scope Doctor queries on the server. Other roles have no appointment access.
+
+### Implemented in Stage 7: Electronic Medical Records
+
+The additive `AddElectronicMedicalRecords` migration creates `clinical_encounters`, `clinical_records` and `clinical_prescription_items`. A clinical encounter references Patient, Doctor and optionally Appointment through restrictive foreign keys. A unique appointment index limits each visit to one encounter. A database trigger validates the patient and doctor against the appointment and verifies that it is checked in when the encounter opens.
+
+The encounter owns diagnoses, prescriptions, and treatments through typed clinical records with separate stable identifiers. A revision references the prior record of the same type and encounter. A unique predecessor index keeps history linear. Prescription items keep stable IDs on draft edits and reference the prescription revision. Required fields, status checks, UTC audit stamps and GUID concurrency tokens protect the records. PostgreSQL triggers protect signed payloads and prescription lines from changes and reject deletion of encounters and clinical records. Medical reports use saved records directly and log generation through the existing audit table.
+
+See [EMR design](emr-design.md) for workflow, role and testing details. The broader design and diagrams below include future modules and use proposed entities.
 
 ## Core conventions
 

@@ -245,6 +245,6 @@ public sealed class PostgreSqlFactAttribute : FactAttribute
     public PostgreSqlFactAttribute()
     {
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("HOSPITAL_APPOINTMENT_TEST_CONNECTION")))
-            Skip = "Set HOSPITAL_APPOINTMENT_TEST_CONNECTION to a separate migrated PostgreSQL test database to run the exclusion/concurrency integration test.";
+            Skip = "Set HOSPITAL_APPOINTMENT_TEST_CONNECTION to a separate migrated PostgreSQL test database to run PostgreSQL integration tests.";
     }
 }

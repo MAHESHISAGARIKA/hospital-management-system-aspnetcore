@@ -57,9 +57,10 @@ Open the URL displayed in the terminal.
 - Stage 1: MVC foundation completed.
 - Stage 2: Initial `Patient` and `Department` EF foundation completed.
 - Stage 3: Identity, login/logout, password change, role authorization, administrator user management and audit logging implemented.
-- Stage 4: Patient directory, registration, profile, editing, archive/reactivation, duplicate warnings and secured document metadata/download routes implemented. Complete EMR workflows remain pending.
+- Stage 4: Patient directory, registration, profile, editing, archive/reactivation, duplicate warnings and secured document metadata/download routes implemented.
 - Stage 5: Doctor profiles, department assignment, weekly schedules, account linking and least-privilege doctor routes implemented.
 - Stage 6: Appointment booking, directory, details, rescheduling, cancellation, status lifecycle and day/week/month range calendar implemented. PostgreSQL overlap enforcement is in `AddAppointmentManagement`; no migration was applied automatically.
+- Stage 7: Doctor-scoped clinical encounters, diagnoses, prescriptions, treatment timeline, tracked amendments, and printable medical reports.
 
 Clinical/EMR, laboratory, pharmacy, billing, admission, staffing and reporting modules are not implemented yet.
 
@@ -74,7 +75,7 @@ dotnet user-secrets set "ConnectionStrings:HospitalDatabase" "Host=localhost;Dat
 Apply migrations manually only after review. For Stage 6 verification, target a disposable database. Set the intended connection in the ConnectionStrings__HospitalDatabase environment variable first. The Testing environment uses that connection and skips application role initialization during EF tooling.
 
 ```bash
-dotnet ef database update AddAppointmentBookingFingerprint --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
+dotnet ef database update AddElectronicMedicalRecords --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
 ```
 
 `AddAppointmentManagement` enables PostgreSQL's `btree_gist` extension and adds a GiST exclusion constraint. The migration account needs permission to create the extension; a DBA may install it beforehand with `CREATE EXTENSION btree_gist;`. Do not grant the application login superuser privileges just for this migration.
@@ -110,13 +111,13 @@ In PowerShell, after configuring that variable, confirm the target and run:
 
 ```powershell
 $env:ConnectionStrings__HospitalDatabase = $env:HOSPITAL_APPOINTMENT_TEST_CONNECTION
-dotnet ef database update AddAppointmentBookingFingerprint --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
-dotnet test HospitalManagementSystem.slnx --filter FullyQualifiedName~PostgreSqlAppointmentIntegrationTests
+dotnet ef database update AddElectronicMedicalRecords --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
+dotnet test HospitalManagementSystem.slnx --filter "FullyQualifiedName~PostgreSqlAppointmentIntegrationTests|FullyQualifiedName~PostgreSqlRejectsRewritingFinalizedClinicalHistory"
 Remove-Item Env:ConnectionStrings__HospitalDatabase
 Remove-Item Env:HOSPITAL_APPOINTMENT_TEST_CONNECTION
 ```
 
-The PostgreSQL test covers adjacent and conflicting bookings, concurrent identical retries, opposite-direction rescheduling, database constraint violations, and transaction rollback. The normal suite skips it when the test connection is absent. Browser-delivered password reset email remains unimplemented until an email provider is configured.
+The PostgreSQL tests cover EMR finalized-record protection and adjacent and conflicting bookings, concurrent identical retries, opposite-direction rescheduling, database constraint violations, and transaction rollback. The normal suite skips them when the test connection is absent. Browser-delivered password reset email remains unimplemented until an email provider is configured.
 
 ### Appointment browser checklist
 
@@ -128,6 +129,20 @@ Use a separate demo database and fictional records. Configure the demo connectio
 4. Reschedule to a doctor in another department. Open the same appointment in two tabs and confirm a stale save asks you to reload. Cancel with a reason and confirm the record remains visible with its new status.
 5. Set **Upcoming only** and other filters. Page forward and backward. Verify that the filters and sort stay in effect.
 6. Open the calendar and try the day, week and month views. Sign in with a linked Doctor account and verify that only that doctor's appointments appear and that opening another doctor's appointment is denied.
+
+## Electronic Medical Records
+
+Sign in as an active linked Doctor and open **Medical records**. Check in one of your appointments before opening an encounter. The patient and responsible doctor come from the appointment. Diagnostic, prescription and treatment entries start as drafts and retain signed history through revisions. Clinical timestamps are displayed in Asia/Colombo.
+
+For manual verification with fictional records on a disposable database:
+
+1. Check in a Doctor's appointment and open its encounter from **Medical records**. Try to open it twice and verify there is only one encounter. Check that a scheduled or cancelled appointment cannot open an encounter.
+2. Add a diagnosis, a treatment record and a prescription with multiple items. Edit draft fields, remove an item, then finalize. Open the same draft in two tabs and check that a stale submit is rejected.
+3. Finalize the encounter, create and finalize a correction, and confirm that both revisions remain visible. Void a signed prescription and verify the original still appears as historical.
+4. Filter the patient timeline by date and encounter. Open the encounter report and prescription print view and use **Print or save PDF**.
+5. Sign in as a different Doctor or as a Receptionist and try the saved report URL. Confirm access is denied.
+
+The migration depends on Stage 6's `AddAppointmentManagement` and `AddAppointmentBookingFingerprint` migrations. The EF command above applies pending predecessors to the chosen database. Verify the target and never use the development database for integration tests. See [clinical record design](docs/emr-design.md) for permissions, lifecycle rules, and deferred policies.
 
 ## Persistent security configuration
 

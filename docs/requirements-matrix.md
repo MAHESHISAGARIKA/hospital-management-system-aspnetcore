@@ -4,12 +4,13 @@ This document maps the proposed Hospital Management System requirements to futur
 
 ## Current implementation status
 
-- **Implemented:** ASP.NET Core MVC shell, homepage, PostgreSQL/User Secrets configuration, EF Core/Npgsql, Identity and seven roles, login/logout, password change, administrator management, audit logging, and Stage 4 patient directory, registration, profile, editing, archival/reactivation, duplicate warnings, private document metadata/download routes and the pending-EMR medical-history placeholder.
+- **Implemented:** ASP.NET Core MVC shell, homepage, PostgreSQL/User Secrets configuration, EF Core/Npgsql, Identity and seven roles, login/logout, password change, administrator management, audit logging, and Stage 4 patient directory, registration, profile, editing, archival/reactivation, duplicate warnings, private document metadata/download routes and the administrative patient profile.
 - **Stage 5 implemented:** Doctor and DoctorSchedule entities, department assignment, doctor directory, registration/edit/active status, schedule CRUD/deactivation, account-link services and least-privilege MVC routes. The Asia/Colombo timezone is documented as schedule display/entry context.
 - **Schedule limitation:** Overnight sessions are rejected. Holidays, leave and one-off unavailability are not modeled.
 - **Stage 6 implemented:** Appointment booking, directory search/filtering, day/week/month range calendar, details, rescheduling, cancellation, lifecycle status changes, actor-scoped booking retries, audit events and UTC storage with Asia/Colombo presentation.
 - **Stage 6 verification limitation:** EF InMemory tests cover service rules. MVC tests cover appointment permissions, doctor options and directory paging. PostgreSQL GiST exclusion, concurrent retries, reschedule locking and rollback require the opt-in integration suite on a disposable PostgreSQL test database.
-- **Not implemented:** Complete diagnoses, prescriptions, treatments/EMR, laboratory workflows, pharmacy, billing, admission, staffing and reporting modules.
+- **Stage 7 implemented:** Doctor-scoped encounters for checked-in visits, diagnosis and treatment drafts, multi-item prescriptions, signed revisions and prescription voids, patient timelines, and browser-printable clinical reports. PostgreSQL trigger verification requires the opt-in disposable-database suite.
+- **Not implemented:** Laboratory workflows, pharmacy, billing, admission, staffing and reporting modules.
 
 | ID | Requirement | Proposed module | Acceptance criteria | Future tests |
 |---|---|---|---|---|
@@ -19,7 +20,7 @@ This document maps the proposed Hospital Management System requirements to futur
 | SEC-04 | Audit logging | Audit and Compliance | Security and clinical/business changes record actor, timestamp, action and relevant entity without secrets | Audit writer tests, audit immutability tests, correlation tests |
 | PAT-01 | Patient registration and updates | Patient Management | A patient can be created or updated with validated required and optional fields | Validation tests, create/update tests, unauthorized update tests |
 | PAT-02 | Patient search | Patient Management | Search works by approved identifiers and name fields without exposing unrelated records | Search boundary tests, duplicate result tests, authorization tests |
-| PAT-03 | Medical history | Patient Management / EMR | Authorized staff can view chronological patient history and linked clinical records | History ordering tests, access tests, no-record tests |
+| PAT-03 | Medical history | Patient Management / EMR | An active linked doctor views only the timeline for their permitted encounters | History ordering tests, access tests, no-record tests |
 | PAT-04 | Document uploads | Document Management | Accepted documents can be uploaded, linked to a patient, virus scanned if available, and permission checked | File type/size tests, ownership tests, download authorization tests |
 | DOC-01 | Doctor profiles | Doctor Management | Doctor profile stores identity, department, active status and approved qualifications | Create/update tests, deactivation tests, department-link tests |
 | DOC-02 | Departments | Department Management | Department codes/names are unique and a department can be activated/deactivated | Unique constraint tests, update/deactivation tests |
