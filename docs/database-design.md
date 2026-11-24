@@ -91,6 +91,10 @@ The encounter owns diagnoses, prescriptions, and treatments through typed clinic
 
 See [EMR design](emr-design.md) for workflow, role and testing details. The broader design and diagrams below include future modules and use proposed entities.
 
+### Implemented in Stage 8: Laboratory Management
+
+The additive AddLaboratoryManagement migration follows AddElectronicMedicalRecords. It creates five tables for catalog tests, orders, order items, samples and result versions. An order gets its patient and doctor through the existing encounter. Items snapshot catalog fields for historical reporting. Sample and prior revision references are constrained to the same item. Released reports are generated from verified result revisions. See [laboratory design](laboratory-management.md).
+
 ## Core conventions
 
 - PostgreSQL `uuid` values are used for primary and foreign keys.

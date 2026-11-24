@@ -58,6 +58,14 @@
                                     <a class="nav-link text-dark" asp-controller="MedicalRecords" asp-action="Index">Medical records</a>
                                 </li>
                             }
+                            @if (User.IsInRole("Doctor") || User.IsInRole("LaboratoryStaff"))
+                            {
+                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Laboratory" asp-action="Index">Laboratory</a></li>
+                            }
+                            @if (User.IsInRole("Administrator"))
+                            {
+                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Laboratory" asp-action="Tests">Lab catalog</a></li>
+                            }
                         }
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>

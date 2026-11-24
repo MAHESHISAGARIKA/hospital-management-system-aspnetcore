@@ -26,10 +26,14 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
     public DbSet<ClinicalRecord> ClinicalRecords => Set<ClinicalRecord>();
     public DbSet<PrescriptionItem> ClinicalPrescriptionItems => Set<PrescriptionItem>();
 
+    public DbSet<LaboratoryTest> LaboratoryTests => Set<LaboratoryTest>();
+    public DbSet<LaboratoryOrder> LaboratoryOrders => Set<LaboratoryOrder>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         ClinicalModelConfiguration.Configure(modelBuilder);
+        LaboratoryModelConfiguration.Configure(modelBuilder);
 
         modelBuilder.Entity<ApplicationUser>(entity =>
         {

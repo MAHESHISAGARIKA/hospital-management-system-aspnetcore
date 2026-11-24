@@ -188,7 +188,7 @@ public sealed class ClinicalRecordService(HospitalDbContext db, IAuditLogService
         await SaveAsync("ClinicalEncounterFinalized", actor, "Encounter", id, "Open to Finalized", ct);
     }
 
-    private IQueryable<ClinicalEncounter> Permitted(Guid doctor)
+    internal IQueryable<ClinicalEncounter> Permitted(Guid doctor)
         => db.ClinicalEncounters.Where(e => e.DoctorId == doctor && e.Patient.IsActive && e.Doctor.IsActive &&
             e.Appointment != null && e.Appointment.DoctorId == doctor && e.Appointment.PatientId == e.PatientId &&
             (e.Appointment.Status == AppointmentStatus.CheckedIn || e.Appointment.Status == AppointmentStatus.Completed));
@@ -200,7 +200,7 @@ public sealed class ClinicalRecordService(HospitalDbContext db, IAuditLogService
         => await WithClinicalData(Permitted(doctor)).SingleOrDefaultAsync(e => e.Id == id, ct)
             ?? throw await DeniedAsync(actor, "Encounter", id, ct);
 
-    private async Task<(Guid Actor, Guid Doctor)> CurrentDoctorAsync(ClaimsPrincipal user, CancellationToken ct)
+    internal async Task<(Guid Actor, Guid Doctor)> CurrentDoctorAsync(ClaimsPrincipal user, CancellationToken ct)
     {
         if (user.Identity?.IsAuthenticated != true || !user.IsInRole(HospitalRoles.Doctor) ||
             !Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var actor))

@@ -2,6 +2,7 @@ using HospitalManagementSystem.Web.Authorization;
 using HospitalManagementSystem.Web.Models;
 using HospitalManagementSystem.Web.Models.ViewModels;
 using HospitalManagementSystem.Web.Services.Clinical;
+using HospitalManagementSystem.Web.Services.Laboratory;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,7 +11,7 @@ namespace HospitalManagementSystem.Web.Controllers;
 [Authorize(Roles = HospitalRoles.Doctor)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [AutoValidateAntiforgeryToken]
-public sealed class MedicalRecordsController(ClinicalRecordService clinical) : Controller
+public sealed class MedicalRecordsController(ClinicalRecordService clinical, LaboratoryService laboratory) : Controller
 {
     [HttpGet]
     public Task<IActionResult> Index(CancellationToken ct)
@@ -26,7 +27,7 @@ public sealed class MedicalRecordsController(ClinicalRecordService clinical) : C
 
     [HttpGet]
     public Task<IActionResult> Encounter(Guid id, CancellationToken ct)
-        => ExecuteAsync(async () => View("ClinicalReport", await clinical.EncounterAsync(User, id, false, null, ct)), id);
+        => ExecuteAsync(async () => await WithLaboratoryAsync(await clinical.EncounterAsync(User, id, false, null, ct), ct), id);
 
     [HttpGet]
     public Task<IActionResult> Report(Guid id, CancellationToken ct)
@@ -39,7 +40,7 @@ public sealed class MedicalRecordsController(ClinicalRecordService clinical) : C
     [HttpGet]
     public Task<IActionResult> Patient(Guid id, DateOnly? from, DateOnly? to, Guid? encounterId, CancellationToken ct)
         => ExecuteAsync(async () => ModelState.IsValid
-            ? View("ClinicalReport", await clinical.PatientAsync(User, id, from, to, encounterId, ct))
+            ? await WithLaboratoryAsync(await clinical.PatientAsync(User, id, from, to, encounterId, ct), ct)
             : BadRequest());
 
     [HttpGet]
@@ -86,6 +87,13 @@ public sealed class MedicalRecordsController(ClinicalRecordService clinical) : C
     [HttpPost]
     public Task<IActionResult> FinalizeEncounter(Guid id, Guid encounterToken, CancellationToken ct)
         => TransitionAsync(id, () => clinical.FinalizeEncounterAsync(User, id, encounterToken, ct), "Encounter finalized.");
+
+    private async Task<IActionResult> WithLaboratoryAsync(ClinicalReport report, CancellationToken ct)
+    {
+        ViewData["LaboratoryOrders"] = await laboratory.EncounterOrdersAsync(User,
+            report.Encounters.Select(encounter => encounter.Id).ToArray(), ct);
+        return View("ClinicalReport", report);
+    }
 
     private Task<IActionResult> TransitionAsync(Guid id, Func<Task> transition, string message)
         => ExecuteAsync(async () =>

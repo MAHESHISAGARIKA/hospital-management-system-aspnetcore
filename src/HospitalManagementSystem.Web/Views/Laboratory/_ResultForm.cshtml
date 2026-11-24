@@ -1,0 +1,23 @@
+@model (Guid OrderId, Guid Token, LaboratoryOrderItem Item, Guid SampleId, LaboratoryResult? Result, bool Amend)
+<form asp-action="SaveResult" asp-route-id="@Model.OrderId" asp-route-amend="@Model.Amend" method="post" class="border rounded p-2 my-2" data-lab-form>
+    <input type="hidden" name="Token" value="@Model.Token" />
+    <input type="hidden" name="ItemId" value="@Model.Item.Id" />
+    <input type="hidden" name="SampleId" value="@Model.SampleId" />
+    <input type="hidden" name="ResultId" value="@(Model.Result?.Id ?? Guid.Empty)" />
+    <div class="row g-2">
+        @if (Model.Item.Kind == LabResultKind.Quantitative)
+        {
+            <label class="col-md-4">Numeric result <input type="text" inputmode="decimal" name="Value" value="@Model.Result?.Value" required class="form-control" /></label>
+        }
+        else
+        {
+            <label class="col-md-4">Qualitative result <input name="QualitativeValue" maxlength="250" value="@Model.Result?.QualitativeValue" required class="form-control" /></label>
+        }
+        <label class="col-md-8">Laboratory note <input name="Note" maxlength="1000" value="@Model.Result?.Note" class="form-control" /></label>
+        @if (Model.Amend)
+        {
+            <label class="col-12">Reason for correction <input name="AmendmentReason" maxlength="500" required class="form-control" /></label>
+        }
+    </div>
+    <button class="btn btn-sm btn-outline-primary mt-2">Save draft</button>
+</form>

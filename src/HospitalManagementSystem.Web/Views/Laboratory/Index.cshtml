@@ -1,0 +1,63 @@
+@model LabQueue
+@{
+    ViewData["Title"] = "Laboratory requests";
+    var filter = Model.Filter;
+    var currentPage = filter.Page;
+    var pages = Math.Max(1, (int)Math.Ceiling((double)Model.Total / LaboratoryService.PageSize));
+}
+<h1 class="h3 mb-3">Laboratory requests</h1>
+<partial name="_Messages" />
+<div class="row g-2 mb-3" aria-label="Laboratory workload">
+@foreach (var status in Enum.GetValues<LabOrderStatus>())
+{
+    <div class="col-6 col-lg-2"><div class="card h-100"><div class="card-body">
+        <strong class="fs-4">@Model.Workload.GetValueOrDefault(status)</strong>
+        <div>@status</div>
+    </div></div></div>
+}
+</div>
+<form method="get" asp-action="Index" class="row g-2 mb-3">
+    <label class="col-md-3">Order or patient number <input name="Search" value="@filter.Search" maxlength="100" class="form-control" /></label>
+    <label class="col-md-2">Date (Asia/Colombo) <input type="date" name="Date" value="@(filter.Date?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-3">Doctor <select name="DoctorId" class="form-select">
+        <option value="">All permitted doctors</option>
+        @foreach (var doctor in Model.Doctors)
+        {
+            <option value="@doctor.Id" selected="@(filter.DoctorId == doctor.Id)">@doctor.FirstName @doctor.LastName</option>
+        }
+    </select></label>
+    <label class="col-md-2">Status <select name="Status" class="form-select">
+        <option value="">All statuses</option>
+        @foreach (var status in Enum.GetValues<LabOrderStatus>())
+        {
+            <option value="@status" selected="@(filter.Status == status)">@status</option>
+        }
+    </select></label>
+    <div class="col-md-2 align-self-end"><button class="btn btn-primary">Filter</button></div>
+</form>
+@if (Model.Orders.Count == 0) { <p class="alert alert-light border">No requests match these filters.</p> }
+else
+{
+    <div class="table-responsive"><table class="table align-middle">
+        <thead><tr><th>Request</th><th>Patient</th><th>Doctor</th><th>Requested (Asia/Colombo)</th><th>Status</th></tr></thead>
+        <tbody>
+        @foreach (var order in Model.Orders)
+        {
+            <tr><td><a asp-action="Details" asp-route-id="@order.Id">@order.Number</a></td>
+            <td>@order.Encounter.Patient.FirstName @order.Encounter.Patient.LastName ? @order.Encounter.Patient.PatientNumber</td>
+            <td>@order.Encounter.Doctor.FirstName @order.Encounter.Doctor.LastName</td>
+            <td>@AppointmentService.ToColombo(order.CreatedAtUtc).ToString("dd MMM yyyy HH:mm")</td>
+            <td><span class="badge text-bg-light border">@order.Status</span></td></tr>
+        }
+        </tbody>
+    </table></div>
+    <nav aria-label="Laboratory requests pagination" class="d-flex gap-2 align-items-center">
+        @foreach (var link in new[] { (Text: "Previous", Page: currentPage - 1), (Text: "Next", Page: currentPage + 1) }.Where(link => link.Page >= 1 && link.Page <= pages))
+        {
+            <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-Page="@link.Page"
+               asp-route-Search="@filter.Search" asp-route-Date="@(filter.Date?.ToString("yyyy-MM-dd"))"
+               asp-route-Status="@filter.Status" asp-route-DoctorId="@filter.DoctorId">@link.Text</a>
+        }
+        <span>Page @currentPage of @pages ? @Model.Total requests</span>
+    </nav>
+}

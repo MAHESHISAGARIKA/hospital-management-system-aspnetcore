@@ -61,6 +61,7 @@ Open the URL displayed in the terminal.
 - Stage 5: Doctor profiles, department assignment, weekly schedules, account linking and least-privilege doctor routes implemented.
 - Stage 6: Appointment booking, directory, details, rescheduling, cancellation, status lifecycle and day/week/month range calendar implemented. PostgreSQL overlap enforcement is in `AddAppointmentManagement`; no migration was applied automatically.
 - Stage 7: Doctor-scoped clinical encounters, diagnoses, prescriptions, treatment timeline, tracked amendments, and printable medical reports.
+- Stage 8: Laboratory catalog, clinical test requests, specimen tracking, result verification and correction, and printable released reports.
 
 Clinical/EMR, laboratory, pharmacy, billing, admission, staffing and reporting modules are not implemented yet.
 
@@ -75,7 +76,7 @@ dotnet user-secrets set "ConnectionStrings:HospitalDatabase" "Host=localhost;Dat
 Apply migrations manually only after review. For Stage 6 verification, target a disposable database. Set the intended connection in the ConnectionStrings__HospitalDatabase environment variable first. The Testing environment uses that connection and skips application role initialization during EF tooling.
 
 ```bash
-dotnet ef database update AddElectronicMedicalRecords --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
+dotnet ef database update AddLaboratoryManagement --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
 ```
 
 `AddAppointmentManagement` enables PostgreSQL's `btree_gist` extension and adds a GiST exclusion constraint. The migration account needs permission to create the extension; a DBA may install it beforehand with `CREATE EXTENSION btree_gist;`. Do not grant the application login superuser privileges just for this migration.
@@ -111,8 +112,8 @@ In PowerShell, after configuring that variable, confirm the target and run:
 
 ```powershell
 $env:ConnectionStrings__HospitalDatabase = $env:HOSPITAL_APPOINTMENT_TEST_CONNECTION
-dotnet ef database update AddElectronicMedicalRecords --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
-dotnet test HospitalManagementSystem.slnx --filter "FullyQualifiedName~PostgreSqlAppointmentIntegrationTests|FullyQualifiedName~PostgreSqlRejectsRewritingFinalizedClinicalHistory"
+dotnet ef database update AddLaboratoryManagement --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
+dotnet test HospitalManagementSystem.slnx --filter "FullyQualifiedName~PostgreSqlAppointmentIntegrationTests|FullyQualifiedName~PostgreSqlRejectsRewritingFinalizedClinicalHistory|FullyQualifiedName~PostgreSqlPreservesLaboratoryHistory"
 Remove-Item Env:ConnectionStrings__HospitalDatabase
 Remove-Item Env:HOSPITAL_APPOINTMENT_TEST_CONNECTION
 ```
@@ -162,3 +163,5 @@ dotnet user-secrets set "PatientDocuments:MaxFileSizeBytes" "10485760" --project
 ```
 
 Do not deploy document uploads publicly without private persistent storage and malware scanning. Production storage should use encrypted persistent volumes and restricted OS/application permissions.
+
+See [Laboratory Management](docs/laboratory-management.md) for Stage 8 workflow, verification and policy details.

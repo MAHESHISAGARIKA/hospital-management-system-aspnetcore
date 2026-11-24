@@ -1,0 +1,25 @@
+@model LaboratoryTest[]
+@{
+    ViewData["Title"] = "Laboratory test catalog";
+}
+<h1 class="h3 mb-3">Laboratory test catalog</h1>
+<partial name="_Messages" />
+<form method="get" asp-action="Tests" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+    <label>Code or test name <input name="Search" value="@Context.Request.Query["Search"]" class="form-control" /></label>
+    <button class="btn btn-outline-primary">Search</button>
+</form>
+<details class="card mb-3" open="@(Model.Length == 0)">
+    <summary class="card-header">Register a test</summary>
+    <partial name="_CatalogForm" model="new LaboratoryTest { Active = true }" />
+</details>
+@if (Model.Length == 0) { <p class="text-muted">No catalog tests found.</p> }
+@foreach (var test in Model)
+{
+    <details class="card mb-2">
+        <summary class="card-header">@test.Code ? @test.Name <span class="badge text-bg-light border">@(test.Active ? "Active" : "Inactive")</span></summary>
+        <partial name="_CatalogForm" model="test" />
+    </details>
+}
+@section Scripts {
+    <script src="~/js/laboratory.js" asp-append-version="true"></script>
+}
