@@ -103,9 +103,12 @@ public sealed class DoctorScheduleService(
 
     public async Task DeactivateAsync(Guid scheduleId, Guid actorUserId, CancellationToken cancellationToken = default)
     {
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         var schedule = await dbContext.DoctorSchedules
             .FirstOrDefaultAsync(item => item.Id == scheduleId, cancellationToken)
             ?? throw new DoctorScheduleNotFoundException(scheduleId);
+
+        await LockDoctorScheduleRowAsync(schedule.DoctorId, cancellationToken);
 
         if (!schedule.IsActive)
             return;
@@ -117,6 +120,7 @@ public sealed class DoctorScheduleService(
         await dbContext.SaveChangesAsync(cancellationToken);
         await auditLogService.WriteAsync("DoctorScheduleDeactivated", actorUserId, null,
             $"Schedule {schedule.Id:D} deactivated for doctor {schedule.DoctorId:D}.", cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 
     private async Task<bool> HasOverlapAsync(

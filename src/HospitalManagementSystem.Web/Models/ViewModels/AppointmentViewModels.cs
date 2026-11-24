@@ -31,7 +31,7 @@ public sealed class AppointmentCreateViewModel : IValidatableObject
     public string? Notes { get; set; }
 
     [Required]
-    public string IdempotencyKey { get; set; } = Guid.NewGuid().ToString("N");
+    public string IdempotencyKey { get; set; } = string.Empty;
 
     public IReadOnlyCollection<AppointmentOptionViewModel> Patients { get; set; } = [];
     public IReadOnlyCollection<DoctorOptionViewModel> Doctors { get; set; } = [];

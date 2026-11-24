@@ -1,3 +1,6 @@
+using System.Data;
+using System.Security.Cryptography;
+using System.Text.Json;
 using HospitalManagementSystem.Web.Data;
 using HospitalManagementSystem.Web.Models;
 using HospitalManagementSystem.Web.Models.ViewModels;
@@ -19,27 +22,40 @@ public sealed class AppointmentService(
 
     public async Task<Appointment> BookAsync(AppointmentCreateViewModel model, Guid actorUserId, CancellationToken cancellationToken = default)
     {
-        ValidateDurationAndStart(model.StartTime, model.DurationMinutes);
         var idempotencyKey = NormalizeIdempotencyKey(model.IdempotencyKey);
+        var reason = NormalizeOptional(model.ReasonForVisit);
+        var notes = NormalizeOptional(model.Notes);
+        var fingerprint = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            Version = 1,
+            model.PatientId,
+            model.DoctorId,
+            model.DepartmentId,
+            Date = model.AppointmentDate.DayNumber,
+            Start = model.StartTime.Ticks,
+            model.DurationMinutes,
+            Reason = reason,
+            Notes = notes
+        })));
 
-        var existingRequest = await dbContext.Appointments
-            .FirstOrDefaultAsync(item => item.IdempotencyKey == idempotencyKey, cancellationToken);
+        await using var transaction = dbContext.Database.IsRelational()
+            ? await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+            : await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await LockAsync($"appointment-request:{actorUserId:D}:{idempotencyKey}", cancellationToken);
+
+        var existingRequest = await dbContext.Appointments.AsNoTracking()
+            .SingleOrDefaultAsync(item => item.CreatedByUserId == actorUserId &&
+                                         item.IdempotencyKey == idempotencyKey, cancellationToken);
         if (existingRequest is not null)
         {
-            if (existingRequest.CreatedByUserId == actorUserId &&
-                existingRequest.PatientId == model.PatientId &&
-                existingRequest.DoctorId == model.DoctorId &&
-                existingRequest.DepartmentId == model.DepartmentId &&
-                existingRequest.StartAtUtc == ToUtc(model.AppointmentDate, model.StartTime) &&
-                existingRequest.EndAtUtc == ToUtc(model.AppointmentDate, model.StartTime).AddMinutes(model.DurationMinutes))
-            {
+            if (existingRequest.BookingRequestFingerprint == fingerprint)
                 return existingRequest;
-            }
 
-            throw new AppointmentIdempotencyConflictException("This booking request key was already used for a different request.");
+            throw new AppointmentIdempotencyConflictException("This booking request key cannot be reused for this request.");
         }
 
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        ValidateDurationAndStart(model.StartTime, model.DurationMinutes);
+        await LockDoctorAsync(model.DoctorId, cancellationToken);
 
         var patient = await dbContext.Patients
             .FirstOrDefaultAsync(item => item.Id == model.PatientId, cancellationToken)
@@ -61,8 +77,6 @@ public sealed class AppointmentService(
         if (!department.IsActive)
             throw new AppointmentValidationException("Inactive departments cannot be used for bookings.");
 
-        await LockDoctorAsync(doctor.Id, cancellationToken);
-
         var startAtUtc = ToUtc(model.AppointmentDate, model.StartTime);
         var endAtUtc = startAtUtc.AddMinutes(model.DurationMinutes);
         if (startAtUtc <= DateTime.UtcNow)
@@ -83,8 +97,9 @@ public sealed class AppointmentService(
             StartAtUtc = startAtUtc,
             EndAtUtc = endAtUtc,
             Status = AppointmentStatus.Scheduled,
-            ReasonForVisit = NormalizeOptional(model.ReasonForVisit),
-            Notes = NormalizeOptional(model.Notes),
+            ReasonForVisit = reason,
+            Notes = notes,
+            BookingRequestFingerprint = fingerprint,
             IdempotencyKey = idempotencyKey,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
@@ -161,9 +176,10 @@ public sealed class AppointmentService(
             query = query.Where(item => item.StartAtUtc >= DateTime.UtcNow && BlockingStatuses.Contains(item.Status));
 
         var total = await query.CountAsync(cancellationToken);
+        criteria.Page = Math.Min(criteria.Page, Math.Max(1, (int)Math.Ceiling((double)total / criteria.PageSize)));
         query = criteria.SortDirection == "Desc"
-            ? query.OrderByDescending(item => item.StartAtUtc)
-            : query.OrderBy(item => item.StartAtUtc);
+            ? query.OrderByDescending(item => item.StartAtUtc).ThenBy(item => item.Id)
+            : query.OrderBy(item => item.StartAtUtc).ThenBy(item => item.Id);
 
         criteria.TotalCount = total;
         var rows = await query
@@ -187,13 +203,15 @@ public sealed class AppointmentService(
         Guid doctorId,
         DateOnly localDate,
         int durationMinutes,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Guid? excludingAppointmentId = null)
     {
         if (!_scheduling.AllowedDurationMinutes.Contains(durationMinutes))
             throw new AppointmentValidationException("Choose a supported appointment duration.");
 
         var doctor = await dbContext.Doctors.AsNoTracking()
-            .FirstOrDefaultAsync(item => item.Id == doctorId && item.IsActive, cancellationToken);
+            .FirstOrDefaultAsync(item => item.Id == doctorId && item.IsActive &&
+                dbContext.Departments.Any(department => department.Id == item.DepartmentId && department.IsActive), cancellationToken);
         if (doctor is null)
             return [];
 
@@ -207,7 +225,7 @@ public sealed class AppointmentService(
         var dayEndUtc = ToUtc(localDate.AddDays(1), TimeOnly.MinValue);
         var busyAppointments = await dbContext.Appointments.AsNoTracking()
             .Where(item => item.DoctorId == doctorId && BlockingStatuses.Contains(item.Status) &&
-                           item.StartAtUtc < dayEndUtc && item.EndAtUtc > dayStartUtc)
+                           item.Id != excludingAppointmentId && item.StartAtUtc < dayEndUtc && item.EndAtUtc > dayStartUtc)
             .Select(item => new { item.StartAtUtc, item.EndAtUtc })
             .ToArrayAsync(cancellationToken);
 
@@ -215,11 +233,12 @@ public sealed class AppointmentService(
         var nowUtc = DateTime.UtcNow;
         foreach (var schedule in schedules)
         {
-            var startMinute = schedule.StartTime.Hour * 60 + schedule.StartTime.Minute;
-            var scheduleEndMinute = schedule.EndTime.Hour * 60 + schedule.EndTime.Minute;
-            for (var minute = startMinute; minute + durationMinutes <= scheduleEndMinute; minute += _scheduling.StartIntervalMinutes)
+            var interval = TimeSpan.FromMinutes(_scheduling.StartIntervalMinutes).Ticks;
+            var firstTick = ((schedule.StartTime.Ticks + interval - 1) / interval) * interval;
+            var durationTicks = TimeSpan.FromMinutes(durationMinutes).Ticks;
+            for (var tick = firstTick; tick + durationTicks <= schedule.EndTime.Ticks; tick += interval)
             {
-                var start = TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(minute));
+                var start = new TimeOnly(tick);
                 var startUtc = ToUtc(localDate, start);
                 var endUtc = startUtc.AddMinutes(durationMinutes);
                 if (startUtc <= nowUtc)
@@ -240,7 +259,9 @@ public sealed class AppointmentService(
         CancellationToken cancellationToken = default)
     {
         ValidateDurationAndStart(model.StartTime, model.DurationMinutes);
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = dbContext.Database.IsRelational()
+            ? await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+            : await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         var appointment = await dbContext.Appointments
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken)
@@ -249,6 +270,9 @@ public sealed class AppointmentService(
             throw new AppointmentConcurrencyException("This appointment changed. Reload and try again.");
         if (appointment.Status != AppointmentStatus.Scheduled)
             throw new AppointmentStatusException("Only scheduled appointments can be rescheduled.");
+
+        foreach (var doctorId in new[] { appointment.DoctorId, model.DoctorId }.Distinct().Order())
+            await LockDoctorAsync(doctorId, cancellationToken);
 
         var patient = await dbContext.Patients.FirstOrDefaultAsync(item => item.Id == appointment.PatientId, cancellationToken);
         if (patient is null || !patient.IsActive)
@@ -261,22 +285,6 @@ public sealed class AppointmentService(
         var department = await dbContext.Departments.FirstOrDefaultAsync(item => item.Id == model.DepartmentId, cancellationToken);
         if (department is null || !department.IsActive)
             throw new AppointmentValidationException("The selected department is inactive or missing.");
-
-        await LockDoctorAsync(appointment.DoctorId, cancellationToken);
-        if (appointment.DoctorId != model.DoctorId)
-        {
-            await LockDoctorAsync(model.DoctorId, cancellationToken);
-        }
-        else if (appointment.DoctorId.CompareTo(model.DoctorId) < 0)
-        {
-            await LockDoctorAsync(appointment.DoctorId, cancellationToken);
-            await LockDoctorAsync(model.DoctorId, cancellationToken);
-        }
-        else
-        {
-            await LockDoctorAsync(model.DoctorId, cancellationToken);
-            await LockDoctorAsync(appointment.DoctorId, cancellationToken);
-        }
 
         var newStartUtc = ToUtc(model.AppointmentDate, model.StartTime);
         var newEndUtc = newStartUtc.AddMinutes(model.DurationMinutes);
@@ -318,23 +326,25 @@ public sealed class AppointmentService(
 
     public async Task CancelAsync(Guid id, AppointmentCancellationViewModel model, Guid actorUserId, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(model.Reason))
-            throw new AppointmentValidationException("A cancellation reason is required.");
+        var reason = model.Reason?.Trim();
+        if (string.IsNullOrEmpty(reason) || reason.Length > 300)
+            throw new AppointmentValidationException("Enter a cancellation reason of up to 300 characters.");
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         var appointment = await dbContext.Appointments.FirstOrDefaultAsync(item => item.Id == id, cancellationToken)
             ?? throw new AppointmentNotFoundException(id);
         if (appointment.ConcurrencyToken != model.ConcurrencyToken)
             throw new AppointmentConcurrencyException("This appointment changed. Reload and try again.");
-        if (appointment.Status is not (AppointmentStatus.Scheduled or AppointmentStatus.CheckedIn))
+        if (!IsValidTransition(appointment.Status, AppointmentStatus.Cancelled))
             throw new AppointmentStatusException("This appointment can no longer be cancelled.");
 
         var oldStatus = appointment.Status;
         appointment.Status = AppointmentStatus.Cancelled;
-        appointment.CancellationReason = model.Reason.Trim();
-        appointment.CancelledAtUtc = DateTime.UtcNow;
+        appointment.CancellationReason = reason;
+        var cancelledAtUtc = DateTime.UtcNow;
+        appointment.CancelledAtUtc = cancelledAtUtc;
         appointment.CancelledByUserId = actorUserId;
-        appointment.UpdatedAtUtc = DateTime.UtcNow;
+        appointment.UpdatedAtUtc = cancelledAtUtc;
         appointment.UpdatedByUserId = actorUserId;
         appointment.ConcurrencyToken = Guid.CreateVersion7();
 
@@ -348,7 +358,7 @@ public sealed class AppointmentService(
         }
 
         await auditLogService.WriteAsync("AppointmentCancelled", actorUserId, null,
-            $"Appointment {appointment.Id:D} changed from {oldStatus} to Cancelled. Reason: {Truncate(model.Reason, 250)}", cancellationToken);
+            $"Appointment {appointment.Id:D} changed from {oldStatus} to Cancelled.", cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
 
@@ -363,6 +373,9 @@ public sealed class AppointmentService(
             ?? throw new AppointmentNotFoundException(id);
         if (appointment.ConcurrencyToken != model.ConcurrencyToken)
             throw new AppointmentConcurrencyException("This appointment changed. Reload and try again.");
+
+        if (model.Status == AppointmentStatus.Cancelled)
+            throw new AppointmentStatusException("Use the cancellation workflow to cancel an appointment.");
 
         if (!IsValidTransition(appointment.Status, model.Status))
             throw new AppointmentStatusException($"The status cannot change from {appointment.Status} to {model.Status}.");
@@ -487,13 +500,16 @@ public sealed class AppointmentService(
             throw new AppointmentConflictException("The selected doctor already has an appointment during this time.");
     }
 
-    private async Task LockDoctorAsync(Guid doctorId, CancellationToken cancellationToken)
+    private Task LockDoctorAsync(Guid doctorId, CancellationToken cancellationToken)
+        => LockAsync(doctorId.ToString("D"), cancellationToken);
+
+    private async Task LockAsync(string lockName, CancellationToken cancellationToken)
     {
         if (!dbContext.Database.IsRelational())
             return;
 
         await dbContext.Database
-            .SqlQuery<int>($"SELECT 1 AS \"Value\" FROM (SELECT pg_advisory_xact_lock(hashtextextended({doctorId.ToString()}, 0))) AS appointment_lock")
+            .SqlQuery<int>($"SELECT 1 AS \"Value\" FROM (SELECT pg_advisory_xact_lock(hashtextextended({lockName}, 0))) AS appointment_lock")
             .FirstAsync(cancellationToken);
     }
 
@@ -534,7 +550,7 @@ public sealed class AppointmentService(
     {
         if (!_scheduling.AllowedDurationMinutes.Contains(durationMinutes))
             throw new AppointmentValidationException("Choose a configured appointment duration.");
-        if ((start.Hour * 60 + start.Minute) % _scheduling.StartIntervalMinutes != 0 || start.Second != 0)
+        if (start.Ticks % TimeSpan.FromMinutes(_scheduling.StartIntervalMinutes).Ticks != 0)
             throw new AppointmentValidationException("Start time does not match the configured appointment interval.");
         if (start.AddMinutes(durationMinutes) <= start)
             throw new AppointmentValidationException("Overnight appointment windows are not supported.");
@@ -550,14 +566,11 @@ public sealed class AppointmentService(
     private static string? NormalizeOptional(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private static string Truncate(string value, int length)
-        => value.Length <= length ? value : value[..length];
-
     private static bool IsExclusionViolation(DbUpdateException exception)
         => FindPostgresException(exception)?.SqlState == "23P01";
 
     private static bool IsUniqueViolation(DbUpdateException exception)
-        => FindPostgresException(exception)?.SqlState == "23505";
+        => FindPostgresException(exception) is { SqlState: "23505", ConstraintName: "ix_appointments_actor_idempotency_key" };
 
     private static PostgresException? FindPostgresException(Exception exception)
     {

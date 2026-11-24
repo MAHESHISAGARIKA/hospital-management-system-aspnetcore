@@ -13,6 +13,7 @@ using Microsoft.Extensions.Options;
 namespace HospitalManagementSystem.Web.Controllers;
 
 [Authorize]
+[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class AppointmentsController(
     IAppointmentService appointmentService,
     HospitalDbContext dbContext,
@@ -24,11 +25,12 @@ public sealed class AppointmentsController(
     [HttpGet]
     public async Task<IActionResult> Index(AppointmentSearchViewModel criteria, CancellationToken cancellationToken)
     {
-        var doctorAccountId = User.IsInRole(HospitalRoles.Doctor) && !User.IsInRole(HospitalRoles.Administrator)
-            ? CurrentUserId()
-            : null;
-        if (User.IsInRole(HospitalRoles.Doctor) && !doctorAccountId.HasValue)
+        var doctorAccountId = CanManageAppointments() ? null : CurrentUserId();
+        if (!CanManageAppointments() && !doctorAccountId.HasValue)
             return Forbid();
+
+        if (!ModelState.IsValid || criteria.Date is { Year: < 2 or > 9998 })
+            return BadRequest();
 
         var result = await appointmentService.SearchAsync(criteria, doctorAccountId, cancellationToken);
         return View(result);
@@ -146,6 +148,7 @@ public sealed class AppointmentsController(
             SetSchedulingViewData();
             await PopulateRescheduleOptionsAsync(model, cancellationToken);
             ViewBag.AppointmentId = id;
+            ViewBag.AppointmentNumber = (await appointmentService.GetAsync(id, cancellationToken))?.AppointmentNumber;
             return View("Edit", model);
         }
 
@@ -165,6 +168,7 @@ public sealed class AppointmentsController(
             SetSchedulingViewData();
             await PopulateRescheduleOptionsAsync(model, cancellationToken);
             ViewBag.AppointmentId = id;
+            ViewBag.AppointmentNumber = (await appointmentService.GetAsync(id, cancellationToken))?.AppointmentNumber;
             return View("Edit", model);
         }
         catch (AppointmentNotFoundException)
@@ -221,12 +225,18 @@ public sealed class AppointmentsController(
                 $"Status update denied for appointment {appointment.Id:D}.", cancellationToken);
             return Forbid();
         }
-        if (!GetAllowedStatusesForCurrentUser(appointment).Contains(model.Status))
+        if (model.Status == AppointmentStatus.Cancelled || !GetAllowedStatusesForCurrentUser(appointment).Contains(model.Status))
             return Forbid();
 
         var actorId = CurrentUserId();
         if (actorId is null)
             return Challenge();
+
+        if (model.ConcurrencyToken != appointment.ConcurrencyToken)
+        {
+            TempData["StatusError"] = "This appointment changed. Reload and try again.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
 
         try
         {
@@ -242,11 +252,34 @@ public sealed class AppointmentsController(
 
     [Authorize(Roles = $"{HospitalRoles.Administrator},{HospitalRoles.Receptionist}")]
     [HttpGet]
-    public async Task<IActionResult> AvailableSlots(Guid doctorId, DateOnly date, int durationMinutes, CancellationToken cancellationToken)
+    public async Task<IActionResult> EligibleDoctors(Guid departmentId, CancellationToken cancellationToken)
     {
+        if (!ModelState.IsValid || departmentId == Guid.Empty)
+            return BadRequest();
+
+        return Json(await GetEligibleDoctorsAsync(departmentId, cancellationToken));
+    }
+
+    [Authorize(Roles = $"{HospitalRoles.Administrator},{HospitalRoles.Receptionist}")]
+    [HttpGet]
+    public async Task<IActionResult> AvailableSlots(
+        Guid doctorId, DateOnly date, int durationMinutes, CancellationToken cancellationToken, Guid? appointmentId = null)
+    {
+        if (!ModelState.IsValid || doctorId == Guid.Empty || date.Year is < 2 or > 9998)
+            return BadRequest(new { message = "Choose a valid doctor and date." });
+
+        if (appointmentId.HasValue)
+        {
+            var appointment = await appointmentService.GetAsync(appointmentId.Value, cancellationToken);
+            if (appointment is null)
+                return NotFound();
+            if (appointment.Status != AppointmentStatus.Scheduled)
+                return BadRequest(new { message = "Only scheduled appointments can be rescheduled." });
+        }
+
         try
         {
-            var slots = await appointmentService.GetAvailableSlotsAsync(doctorId, date, durationMinutes, cancellationToken);
+            var slots = await appointmentService.GetAvailableSlotsAsync(doctorId, date, durationMinutes, cancellationToken, appointmentId);
             return Json(slots.Select(slot => new { value = slot.ToString("HH:mm"), text = slot.ToString("HH:mm") }));
         }
         catch (AppointmentValidationException exception)
@@ -259,11 +292,12 @@ public sealed class AppointmentsController(
     [HttpGet]
     public async Task<IActionResult> Calendar(DateOnly? date, string view = "week", Guid? doctorId = null, CancellationToken cancellationToken = default)
     {
+        if (!ModelState.IsValid || date is { Year: < 2 or > 9998 })
+            return BadRequest();
+
         var selectedDate = date ?? DateOnly.FromDateTime(AppointmentService.ToColombo(DateTime.UtcNow));
-        var doctorAccountId = User.IsInRole(HospitalRoles.Doctor) && !User.IsInRole(HospitalRoles.Administrator)
-            ? CurrentUserId()
-            : null;
-        if (User.IsInRole(HospitalRoles.Doctor) && !doctorAccountId.HasValue)
+        var doctorAccountId = CanManageAppointments() ? null : CurrentUserId();
+        if (!CanManageAppointments() && !doctorAccountId.HasValue)
             return Forbid();
 
         var calendar = await appointmentService.GetCalendarAsync(selectedDate, view, doctorId, doctorAccountId, cancellationToken);
@@ -282,39 +316,36 @@ public sealed class AppointmentsController(
             }).ToArrayAsync(cancellationToken);
         model.Departments = await dbContext.Departments.AsNoTracking()
             .Where(department => department.IsActive).OrderBy(department => department.Name).ToArrayAsync(cancellationToken);
-        model.Doctors = await dbContext.Doctors.AsNoTracking()
-            .Where(doctor => doctor.IsActive && doctor.DepartmentId == model.DepartmentId)
-            .OrderBy(doctor => doctor.LastName).ThenBy(doctor => doctor.FirstName)
-            .Select(doctor => new DoctorOptionViewModel
-            {
-                Id = doctor.Id,
-                DisplayName = "Dr. " + doctor.FirstName + " " + doctor.LastName + " - " + doctor.Specialization
-            }).ToArrayAsync(cancellationToken);
+        model.Doctors = await GetEligibleDoctorsAsync(model.DepartmentId, cancellationToken);
     }
 
     private void SetSchedulingViewData()
     {
         ViewBag.AllowedDurations = _scheduling.AllowedDurationMinutes;
-        ViewBag.StartIntervalSeconds = _scheduling.StartIntervalMinutes * 60;
+        ViewBag.StartIntervalMinutes = _scheduling.StartIntervalMinutes;
     }
 
     private async Task PopulateRescheduleOptionsAsync(AppointmentRescheduleViewModel model, CancellationToken cancellationToken)
     {
         model.Departments = await dbContext.Departments.AsNoTracking()
             .Where(department => department.IsActive).OrderBy(department => department.Name).ToArrayAsync(cancellationToken);
-        model.Doctors = await dbContext.Doctors.AsNoTracking()
-            .Where(doctor => doctor.IsActive && doctor.DepartmentId == model.DepartmentId)
+        model.Doctors = await GetEligibleDoctorsAsync(model.DepartmentId, cancellationToken);
+    }
+
+    private Task<DoctorOptionViewModel[]> GetEligibleDoctorsAsync(Guid departmentId, CancellationToken cancellationToken)
+        => dbContext.Doctors.AsNoTracking()
+            .Where(doctor => doctor.IsActive && doctor.DepartmentId == departmentId &&
+                dbContext.Departments.Any(department => department.Id == departmentId && department.IsActive))
             .OrderBy(doctor => doctor.LastName).ThenBy(doctor => doctor.FirstName)
             .Select(doctor => new DoctorOptionViewModel
             {
                 Id = doctor.Id,
                 DisplayName = "Dr. " + doctor.FirstName + " " + doctor.LastName + " - " + doctor.Specialization
             }).ToArrayAsync(cancellationToken);
-    }
 
     private async Task<bool> CanAccessAsync(Appointment appointment, CancellationToken cancellationToken)
     {
-        if (User.IsInRole(HospitalRoles.Administrator) || User.IsInRole(HospitalRoles.Receptionist))
+        if (CanManageAppointments())
             return true;
         if (!User.IsInRole(HospitalRoles.Doctor))
             return false;
@@ -326,12 +357,15 @@ public sealed class AppointmentsController(
 
     private IReadOnlyCollection<AppointmentStatus> GetAllowedStatusesForCurrentUser(Appointment appointment)
     {
-        if (User.IsInRole(HospitalRoles.Administrator) || User.IsInRole(HospitalRoles.Receptionist))
+        if (CanManageAppointments())
             return AppointmentService.AllowedNextStatuses(appointment.Status);
         if (User.IsInRole(HospitalRoles.Doctor) && appointment.Status == AppointmentStatus.Scheduled)
             return [AppointmentStatus.CheckedIn];
         return [];
     }
+
+    private bool CanManageAppointments()
+        => User.IsInRole(HospitalRoles.Administrator) || User.IsInRole(HospitalRoles.Receptionist);
 
     private Guid? CurrentUserId()
     {

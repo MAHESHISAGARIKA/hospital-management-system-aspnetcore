@@ -5,17 +5,15 @@ using HospitalManagementSystem.Web.Services;
 using HospitalManagementSystem.Web.Services.Appointments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Xunit;
-using Xunit.Sdk;
 
 namespace HospitalManagementSystem.Web.Tests;
 
 public sealed class PostgreSqlAppointmentIntegrationTests
 {
     [PostgreSqlFact]
-    public async Task DatabaseExclusionConstraintRejectsOverlappingDoctorRanges()
+    public async Task DatabaseEnforcesBookingAndReschedulingConcurrency()
     {
         var connectionString = Environment.GetEnvironmentVariable("HOSPITAL_APPOINTMENT_TEST_CONNECTION");
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -33,8 +31,15 @@ public sealed class PostgreSqlAppointmentIntegrationTests
         var departmentId = Guid.CreateVersion7();
         var patientId = Guid.CreateVersion7();
         var doctorId = Guid.CreateVersion7();
+        var otherDoctorId = Guid.CreateVersion7();
         var actorId = Guid.CreateVersion7();
-        var appointmentIds = new List<Guid>();
+
+        await using (var database = new HospitalDbContext(options))
+        {
+            Assert.Contains(await database.Database.GetAppliedMigrationsAsync(),
+                migration => migration.EndsWith("_AddAppointmentManagement", StringComparison.Ordinal));
+            Assert.Empty(await database.Database.GetPendingMigrationsAsync());
+        }
 
         try
         {
@@ -63,33 +68,35 @@ public sealed class PostgreSqlAppointmentIntegrationTests
                     CreatedAtUtc = DateTime.UtcNow,
                     UpdatedAtUtc = DateTime.UtcNow
                 });
-                seedContext.Doctors.Add(new Doctor
+                foreach (var id in new[] { doctorId, otherDoctorId })
                 {
-                    Id = doctorId,
-                    DoctorNumber = $"T{Guid.NewGuid():N}"[..20],
-                    FirstName = "Fictional",
-                    LastName = "Doctor",
-                    RegistrationNumber = $"T{Guid.NewGuid():N}"[..20],
-                    Specialization = "Integration Test",
-                    DepartmentId = departmentId,
-                    IsActive = true,
-                    ConcurrencyToken = Guid.CreateVersion7(),
-                    CreatedAtUtc = DateTime.UtcNow,
-                    UpdatedAtUtc = DateTime.UtcNow
-                });
-                await seedContext.SaveChangesAsync();
-                seedContext.DoctorSchedules.Add(new DoctorSchedule
-                {
-                    Id = Guid.CreateVersion7(),
-                    DoctorId = doctorId,
-                    DayOfWeek = 1,
-                    StartTime = new TimeOnly(9, 0),
-                    EndTime = new TimeOnly(17, 0),
-                    IsActive = true,
-                    ConcurrencyToken = Guid.CreateVersion7(),
-                    CreatedAtUtc = DateTime.UtcNow,
-                    UpdatedAtUtc = DateTime.UtcNow
-                });
+                    seedContext.Doctors.Add(new Doctor
+                    {
+                        Id = id,
+                        DoctorNumber = $"T{Guid.NewGuid():N}"[..20],
+                        FirstName = "Fictional",
+                        LastName = "Doctor",
+                        RegistrationNumber = $"T{Guid.NewGuid():N}"[..20],
+                        Specialization = "Integration Test",
+                        DepartmentId = departmentId,
+                        IsActive = true,
+                        ConcurrencyToken = Guid.CreateVersion7(),
+                        CreatedAtUtc = DateTime.UtcNow,
+                        UpdatedAtUtc = DateTime.UtcNow
+                    });
+                    seedContext.DoctorSchedules.Add(new DoctorSchedule
+                    {
+                        Id = Guid.CreateVersion7(),
+                        DoctorId = id,
+                        DayOfWeek = 1,
+                        StartTime = new TimeOnly(9, 0),
+                        EndTime = new TimeOnly(17, 0),
+                        IsActive = true,
+                        CreatedAtUtc = DateTime.UtcNow,
+                        UpdatedAtUtc = DateTime.UtcNow,
+                        ConcurrencyToken = Guid.CreateVersion7()
+                    });
+                }
                 await seedContext.SaveChangesAsync();
             }
 
@@ -97,17 +104,17 @@ public sealed class PostgreSqlAppointmentIntegrationTests
             while (date.DayOfWeek != DayOfWeek.Monday)
                 date = date.AddDays(1);
 
-            async Task<Appointment> TryBookAsync(string key)
+            async Task<Appointment> TryBookAsync(string key, TimeOnly? start = null, Guid? doctor = null, IAuditLogService? audit = null)
             {
                 await using var context = new HospitalDbContext(options);
-                var service = new AppointmentService(context, new AppointmentNumberGenerator(context), new NoOpAuditLogService(), Options.Create(new AppointmentSchedulingOptions()));
+                var service = new AppointmentService(context, new AppointmentNumberGenerator(context), audit ?? new NoOpAuditLogService(), Options.Create(new AppointmentSchedulingOptions()));
                 return await service.BookAsync(new AppointmentCreateViewModel
                 {
                     PatientId = patientId,
                     DepartmentId = departmentId,
-                    DoctorId = doctorId,
+                    DoctorId = doctor ?? doctorId,
                     AppointmentDate = date,
-                    StartTime = new TimeOnly(10, 0),
+                    StartTime = start ?? new TimeOnly(10, 0),
                     DurationMinutes = 30,
                     IdempotencyKey = key
                 }, actorId);
@@ -118,7 +125,6 @@ public sealed class PostgreSqlAppointmentIntegrationTests
                 CaptureBookingAsync(() => TryBookAsync($"pg-{Guid.NewGuid():N}")));
             var successful = bookingResults.Where(result => result.Appointment is not null).Select(result => result.Appointment!).ToArray();
             Assert.Single(successful);
-            appointmentIds.Add(successful[0].Id);
             Assert.Single(bookingResults, result => result.Conflict is not null);
 
             await using var verifyContext = new HospitalDbContext(options);
@@ -142,13 +148,60 @@ public sealed class PostgreSqlAppointmentIntegrationTests
             verifyContext.Appointments.Add(overlappingDirectInsert);
             var exception = await Assert.ThrowsAsync<DbUpdateException>(() => verifyContext.SaveChangesAsync());
             Assert.Equal("23P01", FindPostgresException(exception)?.SqlState);
+
+            verifyContext.ChangeTracker.Clear();
+            var adjacent = await TryBookAsync($"pg-{Guid.NewGuid():N}", new TimeOnly(10, 30));
+            Assert.Equal(successful[0].EndAtUtc, adjacent.StartAtUtc);
+            Assert.NotEqual(successful[0].AppointmentNumber, adjacent.AppointmentNumber);
+
+            var retryKey = $"pg-{Guid.NewGuid():N}";
+            var retries = await Task.WhenAll(
+                TryBookAsync(retryKey, new TimeOnly(11, 0)),
+                TryBookAsync(retryKey, new TimeOnly(11, 0)));
+            Assert.Equal(retries[0].Id, retries[1].Id);
+            Assert.Equal(1, await verifyContext.Appointments.CountAsync(item =>
+                item.CreatedByUserId == actorId && item.IdempotencyKey == retryKey));
+
+            overlappingDirectInsert.StartAtUtc = successful[0].StartAtUtc.AddHours(4);
+            overlappingDirectInsert.EndAtUtc = successful[0].EndAtUtc.AddHours(4);
+            overlappingDirectInsert.IdempotencyKey = retryKey;
+            verifyContext.Appointments.Add(overlappingDirectInsert);
+            var duplicateKey = await Assert.ThrowsAsync<DbUpdateException>(() => verifyContext.SaveChangesAsync());
+            Assert.Equal("ix_appointments_actor_idempotency_key", FindPostgresException(duplicateKey)?.ConstraintName);
+            verifyContext.ChangeTracker.Clear();
+
+            var onOtherDoctor = await TryBookAsync($"pg-{Guid.NewGuid():N}", new TimeOnly(11, 0), otherDoctorId);
+            async Task<Appointment> MoveAsync(Appointment appointment, Guid targetDoctor)
+            {
+                await using var context = new HospitalDbContext(options);
+                var service = new AppointmentService(context, new AppointmentNumberGenerator(context),
+                    new NoOpAuditLogService(), Options.Create(new AppointmentSchedulingOptions()));
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+                return await service.RescheduleAsync(appointment.Id, new AppointmentRescheduleViewModel
+                {
+                    DoctorId = targetDoctor, DepartmentId = departmentId, AppointmentDate = date,
+                    StartTime = new TimeOnly(12, 0), DurationMinutes = 30, ConcurrencyToken = appointment.ConcurrencyToken
+                }, actorId, timeout.Token);
+            }
+
+            var moved = await Task.WhenAll(MoveAsync(retries[0], otherDoctorId), MoveAsync(onOtherDoctor, doctorId));
+            Assert.Equal(otherDoctorId, moved[0].DoctorId);
+            Assert.Equal(doctorId, moved[1].DoctorId);
+
+            var rollbackKey = $"pg-{Guid.NewGuid():N}";
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                TryBookAsync(rollbackKey, new TimeOnly(15, 0), audit: new FailingAuditLogService()));
+            Assert.False(await verifyContext.Appointments.AnyAsync(item =>
+                item.CreatedByUserId == actorId && item.IdempotencyKey == rollbackKey));
+            Assert.NotNull(await TryBookAsync(rollbackKey, new TimeOnly(15, 0)));
+
         }
         finally
         {
             await using var cleanup = new HospitalDbContext(options);
-            await cleanup.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM appointments WHERE \"DoctorId\" = {doctorId}");
-            await cleanup.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM doctor_schedules WHERE \"DoctorId\" = {doctorId}");
-            await cleanup.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM doctors WHERE \"Id\" = {doctorId}");
+            await cleanup.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM appointments WHERE \"DoctorId\" IN ({doctorId}, {otherDoctorId})");
+            await cleanup.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM doctor_schedules WHERE \"DoctorId\" IN ({doctorId}, {otherDoctorId})");
+            await cleanup.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM doctors WHERE \"Id\" IN ({doctorId}, {otherDoctorId})");
             await cleanup.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM patients WHERE \"Id\" = {patientId}");
             await cleanup.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM departments WHERE \"Id\" = {departmentId}");
         }
@@ -172,6 +225,12 @@ public sealed class PostgreSqlAppointmentIntegrationTests
             if (current is PostgresException postgres)
                 return postgres;
         return null;
+    }
+
+    private sealed class FailingAuditLogService : IAuditLogService
+    {
+        public Task WriteAsync(string action, Guid? actorUserId, Guid? targetUserId, string? details, CancellationToken cancellationToken = default)
+            => throw new InvalidOperationException("Simulated audit failure.");
     }
 
     private sealed class NoOpAuditLogService : IAuditLogService

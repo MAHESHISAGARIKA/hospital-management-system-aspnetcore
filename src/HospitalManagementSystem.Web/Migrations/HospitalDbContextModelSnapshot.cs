@@ -114,6 +114,10 @@ namespace HospitalManagementSystem.Web.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<string>("BookingRequestFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<string>("CancellationReason")
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
@@ -183,9 +187,9 @@ namespace HospitalManagementSystem.Web.Migrations
 
                     b.HasIndex("DepartmentId");
 
-                    b.HasIndex("IdempotencyKey")
+                    b.HasIndex("CreatedByUserId", "IdempotencyKey")
                         .IsUnique()
-                        .HasDatabaseName("ix_appointments_idempotency_key");
+                        .HasDatabaseName("ix_appointments_actor_idempotency_key");
 
                     b.HasIndex("DoctorId", "StartAtUtc");
 

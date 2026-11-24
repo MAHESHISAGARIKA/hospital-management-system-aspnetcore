@@ -57,6 +57,7 @@ public sealed class Appointment
     [MaxLength(64)]
     public string IdempotencyKey { get; set; } = string.Empty;
 
+    public string? BookingRequestFingerprint { get; init; }
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime UpdatedAtUtc { get; set; }

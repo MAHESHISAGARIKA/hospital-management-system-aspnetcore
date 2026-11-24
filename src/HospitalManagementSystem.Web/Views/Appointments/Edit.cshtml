@@ -5,15 +5,19 @@
 }
 <h1 class="h3 mb-3">Reschedule @ViewBag.AppointmentNumber</h1>
 <p class="text-muted">Times use Asia/Colombo. The selected doctor, schedule and conflicts will be rechecked when you save.</p>
-<div asp-validation-summary="ModelOnly" class="text-danger"></div>
-<form asp-action="Reschedule" asp-route-id="@appointmentId" method="post">
+<div asp-validation-summary="All" class="text-danger"></div>
+<form asp-action="Reschedule" asp-route-id="@appointmentId" method="post" data-appointment-form data-doctors-url="@Url.Action("EligibleDoctors")" data-slots-url="@Url.Action("AvailableSlots")" data-appointment-id="@appointmentId">
     <input asp-for="ConcurrencyToken" type="hidden" />
     <div class="row g-3">
         <div class="col-md-4"><label asp-for="DepartmentId" class="form-label"></label><select asp-for="DepartmentId" class="form-select">@foreach (var department in Model.Departments) { <option value="@department.Id">@department.Name</option> }</select></div>
-        <div class="col-md-4"><label asp-for="DoctorId" class="form-label"></label><select asp-for="DoctorId" class="form-select">@foreach (var doctor in Model.Doctors) { <option value="@doctor.Id">@doctor.DisplayName</option> }</select></div>
+        <div class="col-md-4"><label asp-for="DoctorId" class="form-label"></label><select asp-for="DoctorId" class="form-select"><option value="">Select active doctor</option>@foreach (var doctor in Model.Doctors) { <option value="@doctor.Id">@doctor.DisplayName</option> }</select></div>
         <div class="col-md-4"><label asp-for="AppointmentDate" class="form-label"></label><input asp-for="AppointmentDate" type="date" class="form-control" /></div>
-        <div class="col-md-4"><label asp-for="StartTime" class="form-label"></label><input asp-for="StartTime" type="time" step="@ViewBag.StartIntervalSeconds" class="form-control" /></div>
+        <div class="col-md-4"><label asp-for="StartTime" class="form-label"></label><select asp-for="StartTime" class="form-select" data-selected="@Model.StartTime.ToString("HH:mm")" required><option value="">Choose doctor, date and duration</option></select></div>
         <div class="col-md-4"><label asp-for="DurationMinutes" class="form-label"></label><select asp-for="DurationMinutes" class="form-select">@foreach (var duration in (int[])ViewBag.AllowedDurations) { <option value="@duration">@duration</option> }</select></div>
     </div>
     <div class="mt-3"><button type="submit" class="btn btn-primary">Save reschedule</button><a asp-action="Details" asp-route-id="@appointmentId" class="btn btn-outline-secondary">Cancel</a></div>
 </form>
+
+@section Scripts {
+    <script src="~/js/appointment-form.js" asp-append-version="true"></script>
+}

@@ -309,6 +309,7 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
             entity.Property(appointment => appointment.Notes).HasMaxLength(500);
             entity.Property(appointment => appointment.CancellationReason).HasMaxLength(300);
             entity.Property(appointment => appointment.IdempotencyKey).IsRequired().HasMaxLength(64);
+            entity.Property(appointment => appointment.BookingRequestFingerprint).HasMaxLength(64);
             entity.Property(appointment => appointment.Status).HasConversion<string>().IsRequired().HasMaxLength(20);
             entity.Property(appointment => appointment.StartAtUtc).IsRequired();
             entity.Property(appointment => appointment.EndAtUtc).IsRequired();
@@ -337,9 +338,9 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
             entity.HasIndex(appointment => appointment.AppointmentNumber)
                 .IsUnique()
                 .HasDatabaseName("ix_appointments_appointment_number");
-            entity.HasIndex(appointment => appointment.IdempotencyKey)
+            entity.HasIndex(appointment => new { appointment.CreatedByUserId, appointment.IdempotencyKey })
                 .IsUnique()
-                .HasDatabaseName("ix_appointments_idempotency_key");
+                .HasDatabaseName("ix_appointments_actor_idempotency_key");
             entity.HasIndex(appointment => new { appointment.DoctorId, appointment.StartAtUtc });
             entity.HasIndex(appointment => new { appointment.PatientId, appointment.StartAtUtc });
             entity.HasIndex(appointment => new { appointment.Status, appointment.StartAtUtc });

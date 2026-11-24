@@ -3,9 +3,9 @@
     ViewData["Title"] = "Book appointment";
 }
 <h1 class="h3 mb-3">Book appointment</h1>
-<p class="text-muted">Times are entered in Asia/Colombo. Start times use 15-minute intervals; duration options are 15, 30, 45 or 60 minutes.</p>
+<p class="text-muted">Times are entered in Asia/Colombo. Start times use @ViewBag.StartIntervalMinutes-minute intervals.</p>
 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-<form asp-action="Create" method="post" id="appointmentForm">
+<form asp-action="Create" method="post" data-appointment-form data-doctors-url="@Url.Action("EligibleDoctors")" data-slots-url="@Url.Action("AvailableSlots")">
     <input asp-for="IdempotencyKey" type="hidden" />
     <div class="row g-3">
         <div class="col-md-6"><label asp-for="PatientId" class="form-label">Patient</label><select asp-for="PatientId" class="form-select"><option value="">Select active patient</option>@foreach (var patient in Model.Patients) { <option value="@patient.Id">@patient.DisplayName</option> }</select><span asp-validation-for="PatientId" class="text-danger"></span></div>
@@ -13,40 +13,12 @@
         <div class="col-md-6"><label asp-for="DoctorId" class="form-label">Doctor</label><select asp-for="DoctorId" class="form-select"><option value="">Select active doctor</option>@foreach (var doctor in Model.Doctors) { <option value="@doctor.Id">@doctor.DisplayName</option> }</select><span asp-validation-for="DoctorId" class="text-danger"></span></div>
         <div class="col-md-3"><label asp-for="AppointmentDate" class="form-label">Date</label><input asp-for="AppointmentDate" type="date" class="form-control" /><span asp-validation-for="AppointmentDate" class="text-danger"></span></div>
         <div class="col-md-3"><label asp-for="DurationMinutes" class="form-label">Duration (minutes)</label><select asp-for="DurationMinutes" class="form-select">@foreach (var duration in (int[])ViewBag.AllowedDurations) { <option value="@duration">@duration</option> }</select><span asp-validation-for="DurationMinutes" class="text-danger"></span></div>
-        <div class="col-md-4"><label asp-for="StartTime" class="form-label">Available start time</label><select asp-for="StartTime" class="form-select" id="slotSelect"><option value="">Choose doctor, date and duration</option></select><span asp-validation-for="StartTime" class="text-danger"></span></div>
+        <div class="col-md-4"><label asp-for="StartTime" class="form-label">Available start time</label><select asp-for="StartTime" class="form-select" data-selected="@Model.StartTime.ToString("HH:mm")" required><option value="">Choose doctor, date and duration</option></select><span asp-validation-for="StartTime" class="text-danger"></span></div>
         <div class="col-md-8"><label asp-for="ReasonForVisit" class="form-label"></label><input asp-for="ReasonForVisit" class="form-control" /><span asp-validation-for="ReasonForVisit" class="text-danger"></span></div>
         <div class="col-12"><label asp-for="Notes" class="form-label">Administrative notes (not clinical notes)</label><textarea asp-for="Notes" class="form-control" rows="2"></textarea><span asp-validation-for="Notes" class="text-danger"></span></div>
     </div>
     <div class="mt-3"><button type="submit" class="btn btn-primary">Confirm appointment</button><a asp-action="Index" class="btn btn-outline-secondary">Cancel</a></div>
 </form>
 @section Scripts {
-<script>
-(() => {
-    const doctor = document.getElementById('DoctorId');
-    const date = document.getElementById('AppointmentDate');
-    const duration = document.getElementById('DurationMinutes');
-    const slots = document.getElementById('slotSelect');
-    async function refreshSlots() {
-        slots.innerHTML = '<option value="">Loading available times...</option>';
-        if (!doctor.value || !date.value || !duration.value) {
-            slots.innerHTML = '<option value="">Choose doctor, date and duration</option>';
-            return;
-        }
-        const query = new URLSearchParams({ doctorId: doctor.value, date: date.value, durationMinutes: duration.value });
-        const response = await fetch(`/Appointments/AvailableSlots?${query}`);
-        const data = await response.json();
-        slots.innerHTML = '<option value="">Select a time</option>';
-        for (const slot of data) {
-            const option = document.createElement('option');
-            option.value = slot.value;
-            option.textContent = slot.text;
-            slots.appendChild(option);
-        }
-        if (data.length === 0) slots.innerHTML = '<option value="">No available times</option>';
-    }
-    doctor.addEventListener('change', refreshSlots);
-    date.addEventListener('change', refreshSlots);
-    duration.addEventListener('change', refreshSlots);
-})();
-</script>
+    <script src="~/js/appointment-form.js" asp-append-version="true"></script>
 }

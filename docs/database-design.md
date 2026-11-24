@@ -51,7 +51,8 @@ Identity users and roles, audit entries, patient documents, doctors, doctor sche
 | `CancellationReason` | `varchar(300)` | Required by cancellation service when cancelling |
 | `CancelledAtUtc` | `timestamp with time zone` | Optional |
 | `CancelledByUserId` | `uuid` | Optional actor identifier |
-| `IdempotencyKey` | `varchar(64)` | Required, unique |
+| `IdempotencyKey` | `varchar(64)` | Required, unique together with `CreatedByUserId` |
+| `BookingRequestFingerprint` | `varchar(64)` | SHA-256 hash for new rows, nullable for legacy rows |
 | `CreatedAtUtc`, `UpdatedAtUtc` | `timestamp with time zone` | Required |
 | `CreatedByUserId`, `UpdatedByUserId` | `uuid` | Required actor identifiers |
 | `ConcurrencyToken` | `uuid` | Required optimistic concurrency token |
@@ -62,17 +63,25 @@ The appointment interval is stored as UTC instants, never as local wall-clock ti
 
 PostgreSQL installs `btree_gist` and applies an exclusion constraint over `(DoctorId WITH =, tstzrange(StartAtUtc, EndAtUtc, '[)') WITH &&)` for `Scheduled` and `CheckedIn`. This makes interval conflicts database-enforced under simultaneous transactions. End-exclusive ranges allow a new appointment to begin exactly when another ends. `Cancelled` and `Missed` rows do not participate, so their times may be reused. The extension must be present; the migration may need DBA permission to install it.
 
-Booking requests require a unique idempotency key. Retrying the same key and payload by the same actor returns the original appointment; reusing the key for a different payload is rejected. Sequence-backed appointment numbers are independent of idempotency.
+Booking requests use a key scoped to the authenticated actor. A versioned SHA-256 fingerprint covers the original patient, doctor, department, Colombo date and start time, duration, and normalized reason and notes. The fingerprint is set on creation and survives rescheduling. Blank optional text is normalized to null and surrounding whitespace is trimmed. A same-actor retry with the same key and fingerprint returns the same appointment ID, while a different fingerprint gets a conflict. A pre-migration row has a null fingerprint and rejects reuse of its original key. Fingerprints and request free text are excluded from audit entries.
+
+Booking takes a PostgreSQL transaction-scoped lock on the actor and key before reading a prior request. It then locks the selected doctor, checks availability, and commits the booking and audit together. Rescheduling locks the distinct source and target doctor IDs in sorted order, checks the target schedule and overlaps, and uses the appointment concurrency token to reject stale edits. The exclusion constraint still checks the final write. Sequence gaps after conflicts or rollbacks are expected.
+
+`AddAppointmentBookingFingerprint` adds the nullable column and replaces the global key index with a unique index on actor and key. The forward migration keeps all appointment rows and the existing overlap constraint. A rollback to the old global index requires globally distinct keys, so duplicate keys across actors must be reviewed before considering a downgrade.
 
 #### Appointment lifecycle
 
 - `Scheduled` -> `CheckedIn`, `Cancelled` or `Missed`
 - `CheckedIn` -> `Completed` or `Cancelled`
 - `Completed`, `Cancelled` and `Missed` are terminal
-- Cancellation requires a reason and records cancellation time and actor
+- Cancellation requires a reason and records cancellation time and actor. Only the dedicated cancellation action can perform it. The audit entry records the transition without the free-text reason.
 - Rescheduling is permitted only while `Scheduled`; it changes the appointment and audit event atomically and uses the concurrency token
 
 The implementation does not define clinical completion or billing consequences. Appointment duration options are initially 15, 30, 45 or 60 minutes, with starts on 15-minute boundaries. This is a configurable-policy candidate, not an approved hospital-wide rule.
+
+Availability rounds schedule openings up to the next configured clock boundary and offers only future starts whose full duration fits. Weekly schedules do not model holidays, leave, or overnight appointments.
+
+Administrators and Receptionists can book, reschedule, cancel and apply ordinary status transitions. A Doctor can see appointments for their linked profile and check in their own scheduled appointments. Appointment availability and eligible-doctor endpoints are restricted to Administrators and Receptionists and return slot times or minimal doctor choices. The directory and calendar scope Doctor queries on the server. Other roles have no appointment access.
 
 ## Core conventions
 
