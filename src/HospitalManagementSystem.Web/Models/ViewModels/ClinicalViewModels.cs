@@ -26,10 +26,11 @@ public sealed class MedicineInput
     [StringLength(120)] public string? Frequency { get; set; }
     [StringLength(80)] public string? Duration { get; set; }
     [Range(1, int.MaxValue)] public int? Quantity { get; set; }
+    public PharmacyUnit? DispenseUnit { get; set; }
     [StringLength(500)] public string? Instructions { get; set; }
 
     public bool HasContent => new[] { Medicine, Strength, Dose, DoseUnit, Route, Frequency, Duration, Instructions }
-        .Any(value => !string.IsNullOrWhiteSpace(value)) || Quantity.HasValue;
+        .Any(value => !string.IsNullOrWhiteSpace(value)) || Quantity.HasValue || DispenseUnit.HasValue;
 }
 
 public sealed class ClinicalTransitionInput

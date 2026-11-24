@@ -1,0 +1,33 @@
+@model PharmacyDashboard
+@{ ViewData["Title"] = "Pharmacy"; }
+<h1 class="h3">Pharmacy</h1>
+<partial name="_Messages" />
+<partial name="_Links" />
+<div class="row g-2 mb-4">
+    @foreach (var card in new[] { ("Outstanding prescriptions", Model.Pending), ("Partial prescriptions", Model.Partial),
+        ("Completed dispenses", Model.Completed), ("Active medicines", Model.Active), ("Low or out of stock", Model.Low),
+        ($"Expiring within {Model.WarningDays} days", Model.Expiring), ("Expired batches", Model.Expired) })
+    {
+        <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body">
+            <strong class="fs-4">@card.Item2</strong><div>@card.Item1</div>
+        </div></div></div>
+    }
+</div>
+<div class="row g-3">
+    <section class="col-lg-6"><h2 class="h5">Eligible stock</h2>
+        @if (Model.Stock.Count == 0) { <p>No active medicines.</p> }
+        @foreach (var row in Model.Stock)
+        {
+            <div class="border-bottom py-2 d-flex justify-content-between gap-2">
+                <span>@row.Medicine.GenericName</span><strong>@row.Eligible.ToString("0.###") @row.Medicine.Unit</strong>
+            </div>
+        }
+    </section>
+    <section class="col-lg-6"><h2 class="h5">Recent stock movements</h2>
+        @if (Model.Recent.Count == 0) { <p>No stock movements.</p> }
+        @foreach (var movement in Model.Recent)
+        {
+            <div class="border-bottom py-2">@movement.Batch.Medicine.GenericName ? @movement.Kind ? @movement.Quantity.ToString("0.###") @movement.Unit</div>
+        }
+    </section>
+</div>

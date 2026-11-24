@@ -58,6 +58,13 @@
                         <label class="col-md-3">Frequency <input name="@(prefix).Frequency" value="@medicine.Frequency" maxlength="120" class="form-control" /></label>
                         <label class="col-md-6">Duration <input name="@(prefix).Duration" value="@medicine.Duration" maxlength="80" class="form-control" /></label>
                         <label class="col-md-6">Quantity <input type="number" min="1" name="@(prefix).Quantity" value="@medicine.Quantity" class="form-control" /></label>
+                        <label class="col-md-6">Quantity unit <select name="@(prefix).DispenseUnit" class="form-select">
+                            <option value="">Unspecified (requires review)</option>
+                            @foreach (var unit in Enum.GetValues<PharmacyUnit>())
+                            {
+                                <option value="@unit" selected="@(medicine.DispenseUnit == unit)">@unit</option>
+                            }
+                        </select></label>
                         <label class="col-12">Special instructions <textarea name="@(prefix).Instructions" maxlength="500" class="form-control">@medicine.Instructions</textarea></label>
                     </div>
                     <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-remove-medicine>Remove medicine</button>

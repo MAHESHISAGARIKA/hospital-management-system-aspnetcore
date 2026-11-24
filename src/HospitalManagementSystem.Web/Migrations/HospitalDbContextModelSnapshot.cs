@@ -902,6 +902,164 @@ namespace HospitalManagementSystem.Web.Migrations
                         });
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.Medicine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BrandName")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Form")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("GenericName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Manufacturer")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<decimal>("ReorderThreshold")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<string>("Strength")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("GenericName");
+
+                    b.ToTable("medicines", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_medicine_threshold", "\"ReorderThreshold\" >= 0 AND (\"Unit\" IN ('Millilitre','Gram') OR trunc(\"ReorderThreshold\") = \"ReorderThreshold\")");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.MedicineBatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Available")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("Expiry")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("MedicineId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<Guid>("ReceivedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("ReceivedDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("ReceivedQuantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Supplier")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MedicineId", "Number")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "Expiry");
+
+                    b.ToTable("medicine_batches", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_batch_balance", "\"Available\" >= 0 AND \"ReceivedQuantity\" > 0 AND (\"Unit\" IN ('Millilitre','Gram') OR (trunc(\"Available\") = \"Available\" AND trunc(\"ReceivedQuantity\") = \"ReceivedQuantity\"))");
+
+                            t.HasCheckConstraint("ck_batch_dates", "\"Expiry\" >= \"ReceivedDate\"");
+
+                            t.HasCheckConstraint("ck_batch_status", "\"Status\" IN ('Available','Quarantined','Recalled')");
+                        });
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.Patient", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1045,11 +1203,152 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.ToTable("patient_documents", (string)null);
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PharmacyStockMovement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DispenseItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("RequestKey")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DispenseItemId")
+                        .IsUnique();
+
+                    b.HasIndex("ActorId", "RequestKey")
+                        .IsUnique();
+
+                    b.HasIndex("BatchId", "OccurredAtUtc");
+
+                    b.ToTable("pharmacy_stock_movements", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_stock_movement_quantity", "(\"Kind\" IN ('Quarantined','Recalled') AND \"Quantity\" = 0) OR (\"Kind\" NOT IN ('Quarantined','Recalled') AND \"Quantity\" > 0)");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionDispense", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsPartial")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PrescriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequestKey")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.HasIndex("ActorId", "RequestKey")
+                        .IsUnique();
+
+                    b.HasIndex("PrescriptionId", "OccurredAtUtc");
+
+                    b.ToTable("prescription_dispenses", (string)null);
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionDispenseItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DispenseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FefoOverrideReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("PrescriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PrescriptionItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchId");
+
+                    b.HasIndex("DispenseId", "PrescriptionId");
+
+                    b.HasIndex("PrescriptionItemId", "PrescriptionId");
+
+                    b.HasIndex("DispenseId", "PrescriptionItemId", "BatchId")
+                        .IsUnique();
+
+                    b.ToTable("prescription_dispense_items", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_dispense_positive", "\"Quantity\" > 0");
+                        });
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("DispenseUnit")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Dose")
                         .IsRequired()
@@ -1400,6 +1699,17 @@ namespace HospitalManagementSystem.Web.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.MedicineBatch", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.Medicine", "Medicine")
+                        .WithMany("Batches")
+                        .HasForeignKey("MedicineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Medicine");
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientDocument", b =>
                 {
                     b.HasOne("HospitalManagementSystem.Web.Models.Patient", "Patient")
@@ -1409,6 +1719,60 @@ namespace HospitalManagementSystem.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PharmacyStockMovement", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.MedicineBatch", "Batch")
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.PrescriptionDispenseItem", null)
+                        .WithMany()
+                        .HasForeignKey("DispenseItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Batch");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionDispense", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.ClinicalRecord", "Prescription")
+                        .WithMany()
+                        .HasForeignKey("PrescriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Prescription");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionDispenseItem", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.MedicineBatch", "Batch")
+                        .WithMany()
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.PrescriptionDispense", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("DispenseId", "PrescriptionId")
+                        .HasPrincipalKey("Id", "PrescriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.PrescriptionItem", "PrescriptionItem")
+                        .WithMany()
+                        .HasForeignKey("PrescriptionItemId", "PrescriptionId")
+                        .HasPrincipalKey("Id", "PrescriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Batch");
+
+                    b.Navigation("PrescriptionItem");
                 });
 
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionItem", b =>
@@ -1491,6 +1855,16 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.Navigation("Results");
 
                     b.Navigation("Samples");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.Medicine", b =>
+                {
+                    b.Navigation("Batches");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionDispense", b =>
+                {
+                    b.Navigation("Lines");
                 });
 #pragma warning restore 612, 618
         }

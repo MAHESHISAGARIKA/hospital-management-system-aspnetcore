@@ -1,0 +1,24 @@
+@model PharmacyPage<PrescriptionRow>
+@{ ViewData["Title"] = "Pharmacy prescriptions"; }
+<h1 class="h3">Pharmacy prescriptions</h1>
+<partial name="_Links" /><partial name="_Messages" />
+<form method="get" asp-action="Prescriptions" class="row g-2 mb-3">
+    <label class="col-md-6">Prescription ID or exact patient number <input name="Search" value="@Model.Filter.Search" maxlength="100" class="form-control" /></label>
+    <label class="col-md-3">Dispensing status <select name="DispensingStatus" class="form-select"><option value="">All</option>
+        @foreach (var status in new[] { "Outstanding", "Partial", "Complete", "On hold" })
+        { <option value="@status" selected="@(Model.Filter.DispensingStatus == status)">@status</option> }
+    </select></label>
+    <div class="col-md-3 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+</form>
+@if (Model.Rows.Count == 0) { <p>No finalized prescriptions match these filters.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Prescription</th><th>Patient</th><th>Prescriber</th><th>Signed (Asia/Colombo)</th><th>Status</th></tr></thead><tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr><td><a asp-action="Prescription" asp-route-id="@row.Id">@row.Id</a></td><td>@row.PatientName ? @row.PatientNumber</td><td>@row.Doctor</td>
+            <td>@AppointmentService.ToColombo(row.SignedUtc).ToString("dd MMM yyyy HH:mm")</td><td>@row.Status</td></tr>
+    }
+    </tbody></table></div>
+    <partial name="_Paging" model="(Model.Filter.Page, Model.Total)" />
+}

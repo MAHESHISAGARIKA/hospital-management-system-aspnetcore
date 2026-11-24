@@ -1,0 +1,19 @@
+@model PharmacyFilter
+<form method="get" class="row g-2 mb-3 d-print-none">
+    <label class="col-md-3">From <input type="date" name="From" value="@(Model.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-3">To <input type="date" name="To" value="@(Model.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    @if (!string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), "Consumption", StringComparison.Ordinal))
+    {
+        <label class="col-md-3">Movement type <select name="Kind" class="form-select"><option value="">All</option>
+        @foreach (var kind in Enum.GetValues<StockMovementKind>())
+        { <option value="@kind" selected="@(Model.Kind == kind)">@kind</option> }
+        </select></label>
+    }
+    <label class="col-md-3">Batch status <select name="Status" class="form-select"><option value="">All</option>
+        @foreach (var status in Enum.GetValues<BatchStatus>())
+        { <option value="@status" selected="@(Model.Status == status)">@status</option> }
+    </select></label>
+    @if (Model.BatchId.HasValue) { <input type="hidden" name="BatchId" value="@Model.BatchId" /> }
+    @if (Model.MedicineId.HasValue) { <input type="hidden" name="MedicineId" value="@Model.MedicineId" /> }
+    <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+</form>

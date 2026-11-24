@@ -59,5 +59,6 @@ public sealed class PrescriptionItem
     public string Frequency { get; set; } = "";
     public string Duration { get; set; } = "";
     public int? Quantity { get; set; }
+    public PharmacyUnit? DispenseUnit { get; set; }
     public string? Instructions { get; set; }
 }

@@ -66,6 +66,14 @@
                             {
                                 <li class="nav-item"><a class="nav-link text-dark" asp-controller="Laboratory" asp-action="Tests">Lab catalog</a></li>
                             }
+                            @if (User.IsInRole("Pharmacist"))
+                            {
+                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Pharmacy" asp-action="Index">Pharmacy</a></li>
+                            }
+                            @if (User.IsInRole("Administrator"))
+                            {
+                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Pharmacy" asp-action="Medicines">Medicine catalog</a></li>
+                            }
                         }
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>

@@ -29,11 +29,18 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
     public DbSet<LaboratoryTest> LaboratoryTests => Set<LaboratoryTest>();
     public DbSet<LaboratoryOrder> LaboratoryOrders => Set<LaboratoryOrder>();
 
+    public DbSet<Medicine> Medicines => Set<Medicine>();
+    public DbSet<MedicineBatch> MedicineBatches => Set<MedicineBatch>();
+    public DbSet<PharmacyStockMovement> PharmacyStockMovements => Set<PharmacyStockMovement>();
+    public DbSet<PrescriptionDispense> PrescriptionDispenses => Set<PrescriptionDispense>();
+    public DbSet<PrescriptionDispenseItem> PrescriptionDispenseItems => Set<PrescriptionDispenseItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         ClinicalModelConfiguration.Configure(modelBuilder);
         LaboratoryModelConfiguration.Configure(modelBuilder);
+        PharmacyModelConfiguration.Configure(modelBuilder);
 
         modelBuilder.Entity<ApplicationUser>(entity =>
         {

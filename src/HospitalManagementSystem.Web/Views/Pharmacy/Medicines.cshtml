@@ -1,0 +1,33 @@
+@model PharmacyPage<MedicineStock>
+@{ ViewData["Title"] = Model.Filter.LowStock ? "Low stock" : "Medicine catalog"; }
+<h1 class="h3">@ViewData["Title"]</h1>
+<partial name="_Messages" />
+@if (User.IsInRole("Pharmacist")) { <partial name="_Links" /> }
+<a asp-action="Medicine" class="btn btn-sm btn-primary mb-3 d-print-none">Register medicine</a>
+<form asp-action="Medicines" method="get" class="row g-2 mb-3 d-print-none">
+    <label class="col-md-4">Name or code <input name="Search" maxlength="100" value="@Model.Filter.Search" class="form-control" /></label>
+    <label class="col-md-3">Availability <select name="Active" class="form-select"><option value="">All</option>
+        <option value="true" selected="@(Model.Filter.Active == true)">Active</option>
+        <option value="false" selected="@(Model.Filter.Active == false)">Inactive</option></select></label>
+    <label class="col-md-3 align-self-end"><input type="checkbox" name="LowStock" value="true" checked="@Model.Filter.LowStock" /> Low or out of stock</label>
+    <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+</form>
+<partial name="_Print" />
+@if (Model.Rows.Count == 0) { <p>No medicines match these filters.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Code</th><th>Medicine</th><th>Eligible stock</th><th>Reorder threshold</th><th>Availability</th></tr></thead><tbody>
+    @foreach (var row in Model.Rows)
+    {
+        var medicine = row.Medicine;
+        <tr><td><a asp-action="Medicine" asp-route-id="@medicine.Id">@medicine.Code</a></td>
+            <td>@medicine.GenericName @medicine.BrandName ? @medicine.Strength ? @medicine.Form
+            @if (User.IsInRole("Pharmacist"))
+            { <a asp-action="Inventory" asp-route-medicineId="@medicine.Id" class="d-print-none">Batches</a> }</td>
+            <td>@row.Eligible.ToString("0.###") @medicine.Unit</td><td>@medicine.ReorderThreshold.ToString("0.###") @medicine.Unit</td>
+            <td>@(!medicine.IsActive ? "Inactive" : row.Eligible == 0 ? "Out of stock" : row.Eligible < medicine.ReorderThreshold ? "Low stock" : "Active")</td></tr>
+    }
+    </tbody></table></div>
+    <partial name="_Paging" model="(Model.Filter.Page, Model.Total)" />
+}
+@section Scripts { <script src="~/js/pharmacy.js" asp-append-version="true"></script> }

@@ -11,7 +11,8 @@ This document maps the proposed Hospital Management System requirements to futur
 - **Stage 6 verification limitation:** EF InMemory tests cover service rules. MVC tests cover appointment permissions, doctor options and directory paging. PostgreSQL GiST exclusion, concurrent retries, reschedule locking and rollback require the opt-in integration suite on a disposable PostgreSQL test database.
 - **Stage 7 implemented:** Doctor-scoped encounters for checked-in visits, diagnosis and treatment drafts, multi-item prescriptions, signed revisions and prescription voids, patient timelines, and browser-printable clinical reports. PostgreSQL trigger verification requires the opt-in disposable-database suite.
 - **Stage 8 implemented:** Laboratory catalog, doctor-scoped requests, specimen tracking, staff result verification, corrections and browser-printable reports. Native PostgreSQL verification requires a disposable database.
-- **Not implemented:** pharmacy, billing, admission, staffing and reporting modules.
+- **Stage 9 implemented:** Catalog, batch stock, ledger, expiry and low-stock monitoring, and partial dispensing against signed EMR prescriptions. PostgreSQL verification is opt-in on a disposable database.
+- **Not implemented:** billing, admission, staffing and reporting modules.
 
 | ID | Requirement | Proposed module | Acceptance criteria | Future tests |
 |---|---|---|---|---|

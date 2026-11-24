@@ -1,0 +1,45 @@
+@model PharmacyPage<MedicineBatch>
+@{
+    ViewData["Title"] = "Batch inventory and expiry";
+    var filter = Model.Filter;
+}
+<h1 class="h3">@ViewData["Title"]</h1>
+<partial name="_Messages" /><partial name="_Links" />
+<form method="get" asp-action="Inventory" class="row g-2 mb-3 d-print-none">
+    <label class="col-md-3">Batch or medicine <input name="Search" value="@filter.Search" maxlength="100" class="form-control" /></label>
+    <label class="col-md-2">Expiry from <input type="date" name="From" value="@(filter.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">Expiry to <input type="date" name="To" value="@(filter.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">Batch status <select name="Status" class="form-select">
+        <option value="">All</option>
+        @foreach (var status in Enum.GetValues<BatchStatus>())
+        { <option value="@status" selected="@(filter.Status == status)">@status</option> }
+    </select></label>
+    <label class="col-md-2">Upcoming expiry <select name="Days" class="form-select"><option value="">Any</option>
+        @foreach (var days in (IReadOnlyList<int>)ViewData["WarningDays"]!)
+        { <option value="@days" selected="@(filter.Days == days)">@days days</option> }
+    </select></label>
+    <label class="col-md-2 align-self-end"><input type="checkbox" name="Expired" value="true" checked="@filter.Expired" /> Expired only</label>
+    <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+    @if (filter.MedicineId.HasValue) { <input type="hidden" name="MedicineId" value="@filter.MedicineId" /> }
+</form>
+<partial name="_Print" />
+@if (ViewData["ExpiredTotals"] is IReadOnlyDictionary<PharmacyUnit, decimal> totals && totals.Count > 0)
+{
+    <p><strong>Expired stock in these filters</strong>
+    @string.Join(" ? ", totals.OrderBy(total => total.Key).Select(total => $"{total.Value:0.###} {total.Key}"))</p>
+}
+@if (Model.Rows.Count == 0) { <p>No batches match these filters.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Batch</th><th>Medicine</th><th>Received</th><th>Balance</th><th>Expiry</th><th>Status</th></tr></thead><tbody>
+    @foreach (var batch in Model.Rows)
+    {
+        <tr><td><a asp-action="Adjust" asp-route-id="@batch.Id">@batch.Number</a></td>
+            <td>@batch.Medicine.GenericName ? @batch.Medicine.Code</td>
+            <td>@batch.ReceivedQuantity.ToString("0.###") @batch.Unit</td><td>@batch.Available.ToString("0.###") @batch.Unit</td>
+            <td>@batch.Expiry.ToString("dd MMM yyyy")</td><td>@batch.Status @if (batch.Expiry < HospitalManagementSystem.Web.Services.Clinical.ClinicalRecordService.LocalToday) { <span class="badge text-bg-danger">Expired</span> }</td></tr>
+    }
+    </tbody></table></div>
+    <partial name="_Paging" model="(filter.Page, Model.Total)" />
+}
+@section Scripts { <script src="~/js/pharmacy.js" asp-append-version="true"></script> }
