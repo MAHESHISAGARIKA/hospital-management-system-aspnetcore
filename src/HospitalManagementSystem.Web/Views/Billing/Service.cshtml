@@ -1,0 +1,39 @@
+@model BillingCatalogInput
+@{
+    ViewData["Title"] = "Billing service";
+    var service = ViewData["Service"] as BillableService;
+}
+<h1 class="h3">Billing service</h1>
+<partial name="_Links" />
+<form asp-action="SaveService" asp-route-id="@service?.Id" method="post" class="row g-3 mb-4" data-billing-form>
+    <input asp-for="Token" type="hidden" />
+    <label class="col-md-3">Service code <input asp-for="Code" class="form-control" required /></label>
+    <label class="col-md-5">Description <input asp-for="Name" class="form-control" required /></label>
+    <label class="col-md-4">Category <select asp-for="Category" asp-items="Html.GetEnumSelectList<BillingCategory>()" class="form-select"></select></label>
+    <label class="col-md-5">Lab test or pharmacy medicine catalog code <input asp-for="SourceCode" class="form-control" /></label>
+    <label class="col-md-3 align-self-end"><input asp-for="Active" /> Active</label>
+    <div><button class="btn btn-primary">Save service</button></div>
+</form>
+@if (service is not null)
+{
+    <section><h2 class="h5">Price history</h2>
+        @if (service.Prices.Count == 0) { <p>No price periods have been configured.</p> }
+        else
+        {
+            <div class="table-responsive"><table class="table"><thead><tr><th>Start</th><th>End (exclusive)</th><th>Price</th><th>Configured by</th></tr></thead><tbody>
+            @foreach (var price in service.Prices.OrderByDescending(p => p.From))
+            {
+                <tr><td>@price.From.ToString("dd MMM yyyy")</td><td>@price.Until?.ToString("dd MMM yyyy")</td>
+                    <td>LKR @price.Amount.ToString("N2")</td><td>@price.CreatedByUserId</td></tr>
+            }
+            </tbody></table></div>
+        }
+        <form asp-action="Price" asp-route-id="@service.Id" method="post" class="row g-2" data-billing-form data-confirm="Save this immutable price period?">
+            <label class="col-md-3">Start date <input type="date" name="From" required class="form-control" /></label>
+            <label class="col-md-3">Exclusive end date <input type="date" name="Until" required class="form-control" /></label>
+            <label class="col-md-3">Unit price (LKR) <input name="Amount" inputmode="decimal" required class="form-control" /></label>
+            <div class="col-md-3 align-self-end"><button class="btn btn-outline-primary">Add price period</button></div>
+        </form>
+    </section>
+}
+@section Scripts { <script src="~/js/billing.js" asp-append-version="true"></script> }

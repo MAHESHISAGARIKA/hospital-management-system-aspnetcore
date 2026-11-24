@@ -87,6 +87,7 @@ builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ClinicalRecordService>();
+builder.Services.AddScoped<HospitalManagementSystem.Web.Services.Billing.BillingService>();
 builder.Services.AddScoped<HospitalManagementSystem.Web.Services.Pharmacy.PharmacyService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddOptions<HospitalManagementSystem.Web.Services.Pharmacy.PharmacyOptions>()

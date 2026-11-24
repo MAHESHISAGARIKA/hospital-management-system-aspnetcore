@@ -30,3 +30,5 @@ The additive AddPharmacyManagement migration depends on AddLaboratoryManagement.
 5. Void or amend the signed prescription. Check that the old receipt remains available and the affected revision is held.
 
 Controlled-drug and refill rules, controlled returns and reconciliation, multi-location assignments, and server-side PDF export need separate policy or development. Billing may later consume a dispensing reference and approved charge metadata. This stage creates no invoices or payments.
+
+Stage 10 can manually bill eligible source lines under configured prices. See [Billing and Payments](billing-management.md).

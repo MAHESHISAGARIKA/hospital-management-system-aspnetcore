@@ -1,0 +1,48 @@
+@model BillingReports
+@{ ViewData["Title"] = "Billing reports"; var filter = Model.Filter; }
+<h1 class="h3">Billing reports</h1>
+<partial name="_Links" />
+<form asp-action="Reports" method="get" class="row g-2 mb-3 d-print-none">
+    <label class="col-md-2">From <input name="From" type="date" value="@(filter.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">To <input name="To" type="date" value="@(filter.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">Payment method <select name="Method" class="form-select"><option value="">All</option>
+        @foreach (var method in Enum.GetValues<BillingPaymentMethod>())
+        { <option value="@method" selected="@(method == filter.Method)">@method</option> }
+    </select></label>
+    <label class="col-md-2">Service category <select name="Category" class="form-select"><option value="">All</option>
+        @foreach (var category in Enum.GetValues<BillingCategory>())
+        { <option value="@category" selected="@(category == filter.Category)">@category</option> }
+    </select></label>
+    <label class="col-md-2 align-self-end"><input name="Reversed" type="checkbox" value="true" checked="@filter.Reversed" /> Reversal list</label>
+    <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+</form>
+<partial name="_Print" />
+<p>Dates use Asia/Colombo. The default range is the last 30 days. Collections exclude reversed payments.</p>
+<div class="row">
+@foreach (var group in new[] { ("Daily collections", Model.Daily), ("Collections by method", Model.Methods),
+    ("Issued billing totals by category", Model.Invoiced) })
+{
+    <section class="col-lg-4"><h2 class="h5">@group.Item1</h2>
+        @if (group.Item2.Count == 0) { <p>No entries in this range.</p> }
+        <ul class="list-unstyled">
+        @foreach (var total in group.Item2)
+        { <li class="border-bottom py-1">@total.Label ? LKR @total.Amount.ToString("N2") ? @total.Count entries</li> }
+        </ul>
+    </section>
+}
+</div>
+<h2 class="h5">@(filter.Reversed ? "Payment reversals" : "Payment and receipt activity")</h2>
+@if (Model.Payments.Rows.Count == 0) { <p>No payment records match.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Receipt</th><th>Invoice</th><th>Amount (LKR)</th><th>Method</th><th>Date</th><th>State</th></tr></thead><tbody>
+    @foreach (var payment in Model.Payments.Rows)
+    {
+        var date = filter.Reversed && payment.Reversal is not null ? payment.Reversal.CreatedAtUtc : payment.RecordedAtUtc;
+        <tr><td><a asp-action="Receipt" asp-route-id="@payment.Id">@payment.ReceiptNumber</a></td><td>@payment.Invoice.Number</td>
+            <td>@payment.Amount.ToString("N2")</td><td>@payment.Method</td><td>@AppointmentService.ToColombo(date).ToString("dd MMM yyyy HH:mm")</td>
+            <td>@(payment.Reversal is null ? "Recorded" : "Reversed")</td></tr>
+    }
+    </tbody></table></div><partial name="_Paging" model="(filter.Page, Model.Payments.Total)" />
+}
+@section Scripts { <script src="~/js/billing.js" asp-append-version="true"></script> }

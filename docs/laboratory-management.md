@@ -27,3 +27,5 @@ Use a disposable PostgreSQL database and fictional identities. Run the migration
 6. Try a stale form and open the report as an unrelated Doctor, Administrator or Receptionist. Confirm the protected operations fail.
 
 Approved reference versions, critical-result notifications, independent verification, multi-site assignments, persisted report editions and server-side PDF export are deferred. No reference ranges are seeded. Future Billing can use order identifiers and separately approved charge metadata. Stage 8 creates no billing transactions.
+
+Stage 10 can manually bill eligible source lines under configured prices. See [Billing and Payments](billing-management.md).

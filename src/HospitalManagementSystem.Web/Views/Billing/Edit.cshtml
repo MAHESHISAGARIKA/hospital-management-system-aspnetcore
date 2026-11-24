@@ -1,0 +1,66 @@
+@model BillingEditor
+@{
+    ViewData["Title"] = Model.Id.HasValue ? "Edit draft invoice" : "Create invoice";
+    var input = Model.Input;
+}
+<h1 class="h3">@ViewData["Title"]</h1>
+<partial name="_Links" />
+@if (!Model.Id.HasValue && !input.ReplacesId.HasValue)
+{
+    <form asp-action="Edit" method="get" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+        <label>Patient <select name="patientId" required class="form-select">
+            <option value="">Select a patient</option>
+            @foreach (var patient in Model.Patients)
+            { <option value="@patient.Id" selected="@(input.PatientId == patient.Id)">@patient.Number ? @patient.Name</option> }
+        </select></label>
+        <button class="btn btn-outline-primary">Load patient?s charge sources</button>
+    </form>
+}
+@if (input.PatientId != Guid.Empty)
+{
+    var selectedPatient = Model.Patients.SingleOrDefault(item => item.Id == input.PatientId);
+    <p>@selectedPatient?.Number ? @selectedPatient?.Name</p>
+    @if (input.ReplacesId.HasValue) { <p>Replacement for a voided invoice.</p> }
+    <form asp-action="SaveDraft" asp-route-id="@Model.Id" method="post" data-billing-form>
+        <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+        <input asp-for="Input.Token" type="hidden" />
+        <input asp-for="Input.PatientId" type="hidden" />
+        <input asp-for="Input.ReplacesId" type="hidden" />
+        <label class="mb-3">Service date (Asia/Colombo) <input asp-for="Input.ServiceDate" type="date" required class="form-control" /></label>
+        @if (Model.Services.Count == 0) { <p>No active billable services are available.</p> }
+        else
+        {
+            <div data-invoice-lines>
+            @for (var index = 0; index < 20; index++)
+            {
+                var line = index < input.Lines.Count ? input.Lines[index] : new InvoiceLineInput();
+                var prefix = $"Input.Lines[{index}]";
+                <fieldset data-invoice-line hidden="@(index >= Math.Max(1, input.Lines.Count))" class="border rounded p-3 mb-2">
+                    <legend class="float-none w-auto fs-6 px-1">Charge @(index + 1)</legend>
+                    <div class="row g-2">
+                        <label class="col-md-4">Service <select name="@(prefix).ServiceId" class="form-select" data-billing-service>
+                            <option value="@Guid.Empty">Choose a service</option>
+                            @foreach (var service in Model.Services)
+                            {
+                                <option value="@service.Id" selected="@(line.ServiceId == service.Id)" data-category="@service.Category" data-code="@service.SourceCode">@service.Code ? @service.Name</option>
+                            }
+                        </select></label>
+                        <label class="col-md-5">Clinical source <select name="@(prefix).SourceId" class="form-select" data-billing-source>
+                            <option value="">None (manual Other service)</option>
+                            @foreach (var source in Model.Sources)
+                            {
+                                <option value="@source.Id" selected="@(line.SourceId == source.Id)" data-category="@source.Category" data-code="@source.Code" data-quantity="@source.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)">@source.Category ? @source.Reference @source.Code ? @source.ServiceDate.ToString("yyyy-MM-dd") ? quantity @source.Quantity.ToString("0.###")</option>
+                            }
+                        </select></label>
+                        <label class="col-md-3">Quantity <input name="@(prefix).Quantity" value="@line.Quantity.ToString("0.###")" inputmode="decimal" class="form-control" data-billing-quantity /></label>
+                    </div>
+                    <button type="button" data-remove-charge class="btn btn-sm btn-outline-secondary mt-2">Remove charge</button>
+                </fieldset>
+            }
+            <button type="button" data-add-charge class="btn btn-outline-secondary mb-3">Add charge</button>
+            </div>
+            <div><button class="btn btn-primary">Save draft</button></div>
+        }
+    </form>
+}
+@section Scripts { <script src="~/js/billing.js" asp-append-version="true"></script> }

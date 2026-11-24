@@ -1,0 +1,91 @@
+@model InvoicePage
+@{
+    ViewData["Title"] = "Patient invoice";
+    var invoice = Model.Invoice;
+    var print = ViewData["Print"] is true;
+    var state = invoice.Status != InvoiceStatus.Issued ? invoice.Status.ToString() :
+        Model.Balance == 0 ? "Paid" : Model.Paid == 0 ? "Unpaid" : "Partially paid";
+}
+<h1 class="h3">@(print ? "Hospital Management System ? Invoice" : "Patient invoice")</h1>
+@if (!print) { <partial name="_Links" /> }
+else { <partial name="_Print" /> }
+<p class="text-break">@invoice.Number <span class="badge text-bg-light border">@state</span></p>
+<p>Patient @(invoice.PatientReference ?? invoice.Patient.PatientNumber) ? @(invoice.PatientLabel ?? $"{invoice.Patient.FirstName} {invoice.Patient.LastName}")</p>
+@if (invoice.IssuedAtUtc is DateTime issued)
+{ <p>Issued @AppointmentService.ToColombo(issued).ToString("dd MMM yyyy HH:mm") Asia/Colombo</p> }
+@if (invoice.ReplacesId.HasValue)
+{ <p><a asp-action="Details" asp-route-id="@invoice.ReplacesId">Original voided invoice</a></p> }
+<p>Service date @invoice.ServiceDate.ToString("dd MMM yyyy") Asia/Colombo</p>
+@if (invoice.VoidReason is not null && !print) { <p class="text-break">Void reason ? @invoice.VoidReason</p> }
+<div class="table-responsive"><table class="table"><thead><tr><th>Service</th><th>Quantity</th><th>Unit price (LKR)</th><th>Line total (LKR)</th></tr></thead><tbody>
+@foreach (var line in invoice.Items)
+{
+    <tr><td>@line.Code ? @line.Name</td><td>@line.Quantity.ToString("0.###")</td><td>@line.UnitPrice.ToString("N2")</td><td>@line.Total.ToString("N2")</td></tr>
+}
+</tbody></table></div>
+<div class="card mb-3"><div class="card-body">
+    <p>Total <strong>LKR @invoice.Total.ToString("N2")</strong></p>
+    <p>Valid payments <strong>LKR @Model.Paid.ToString("N2")</strong></p>
+    <p class="mb-0">Outstanding <strong>LKR @(invoice.Status == InvoiceStatus.Issued ? Model.Balance.ToString("N2") : "0.00")</strong></p>
+</div></div>
+@if (!print)
+{
+    @if (invoice.Status == InvoiceStatus.Draft)
+    {
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="Edit" asp-route-id="@invoice.Id" class="btn btn-outline-primary">Edit draft</a>
+            <form asp-action="Issue" asp-route-id="@invoice.Id" method="post" data-billing-form data-confirm="Issue this invoice and lock its charges?">
+                <input type="hidden" name="Token" value="@invoice.Token" /><button class="btn btn-primary">Issue invoice</button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <a asp-action="Print" asp-route-id="@invoice.Id" class="btn btn-outline-primary">Print invoice</a>
+            @if (invoice.Status == InvoiceStatus.Voided)
+            { <a asp-action="Edit" asp-route-replacesId="@invoice.Id" class="btn btn-outline-primary">Create replacement</a> }
+        </div>
+    }
+    @if (invoice.Status == InvoiceStatus.Issued && Model.Balance > 0)
+    {
+        <section class="card mb-3"><div class="card-body">
+            <h2 class="h5">Record payment</h2>
+            <form asp-action="Pay" asp-route-id="@invoice.Id" method="post" class="row g-2" data-billing-form data-confirm="Record this payment after confirming it was received?">
+                <input type="hidden" name="Token" value="@invoice.Token" /><input type="hidden" name="RequestKey" value="@Model.PaymentKey" />
+                <label class="col-md-3">Amount (LKR) <input name="Amount" required inputmode="decimal" class="form-control" /></label>
+                <label class="col-md-3">Method <select name="Method" class="form-select" data-billing-method><option value="Cash">Cash</option><option value="BankTransfer">Bank transfer</option></select></label>
+                <label class="col-md-4">Transfer reference <input name="BankReference" maxlength="80" class="form-control" data-billing-reference /></label>
+                <div class="col-md-2 align-self-end"><button class="btn btn-primary">Record payment</button></div>
+            </form>
+        </div></section>
+    }
+    @if (invoice.Payments.Count > 0)
+    {
+        <h2 class="h5">Payment history</h2>
+        <div class="table-responsive"><table class="table"><thead><tr><th>Receipt</th><th>Amount (LKR)</th><th>Method</th><th>Status</th><th>Action</th></tr></thead><tbody>
+        @foreach (var payment in invoice.Payments.OrderByDescending(p => p.RecordedAtUtc))
+        {
+            <tr><td><a asp-action="Receipt" asp-route-id="@payment.Id">@payment.ReceiptNumber</a></td><td>@payment.Amount.ToString("N2")</td>
+                <td>@payment.Method</td><td>@(payment.Reversal is null ? "Recorded" : "Reversed")</td><td>
+                @if (invoice.Status == InvoiceStatus.Issued && payment.Reversal is null)
+                {
+                    <form asp-action="Reverse" asp-route-id="@payment.Id" method="post" class="d-flex gap-2" data-billing-form data-confirm="Reverse the full recorded payment? This does not return funds.">
+                        <input type="hidden" name="Token" value="@invoice.Token" />
+                        <input name="Reason" required maxlength="500" aria-label="Reason for reversing payment" placeholder="Reversal reason" class="form-control form-control-sm" />
+                        <button class="btn btn-sm btn-outline-danger">Reverse</button>
+                    </form>
+                }
+                </td></tr>
+        }
+        </tbody></table></div>
+    }
+    @if (invoice.Status == InvoiceStatus.Issued && invoice.Payments.All(p => p.Reversal != null))
+    {
+        <form asp-action="Void" asp-route-id="@invoice.Id" method="post" class="d-flex flex-wrap gap-2 align-items-end" data-billing-form data-confirm="Void this invoice permanently?">
+            <input type="hidden" name="Token" value="@invoice.Token" />
+            <label>Void reason <input name="Reason" maxlength="500" required class="form-control" /></label><button class="btn btn-outline-danger">Void invoice</button>
+        </form>
+    }
+}
+@section Scripts { <script src="~/js/billing.js" asp-append-version="true"></script> }

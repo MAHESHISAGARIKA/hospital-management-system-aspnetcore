@@ -1,0 +1,20 @@
+@model (int Current, int Total)
+@{
+    var pages = Math.Max(1, (int)Math.Ceiling((double)Model.Total / BillingService.PageSize));
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var route = Context.Request.Query.Where(pair => !pair.Key.Equals("Page", StringComparison.OrdinalIgnoreCase))
+        .ToDictionary(pair => pair.Key, pair => pair.Value.ToString(), StringComparer.OrdinalIgnoreCase);
+    if (Context.Request.Path.Value?.EndsWith("/Outstanding", StringComparison.OrdinalIgnoreCase) == true)
+        route["Outstanding"] = "true";
+}
+<nav aria-label="Billing pagination" class="d-flex align-items-center gap-2 d-print-none">
+@foreach (var link in new[] { (Label: "Previous", Number: Model.Current - 1), (Label: "Next", Number: Model.Current + 1) })
+{
+    if (link.Number >= 1 && link.Number <= pages)
+    {
+        var values = new Dictionary<string, string>(route) { ["Page"] = link.Number.ToString() };
+        <a asp-action="@action" asp-all-route-data="values" class="btn btn-sm btn-outline-secondary">@link.Label</a>
+    }
+}
+<span>Page @Model.Current of @pages ? @Model.Total records</span>
+</nav>

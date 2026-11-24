@@ -1,0 +1,10 @@
+<nav aria-label="Billing" class="d-flex flex-wrap gap-2 mb-3 d-print-none">
+    <a asp-action="Index" class="btn btn-sm btn-outline-primary">Dashboard</a>
+    <a asp-action="Services" class="btn btn-sm btn-outline-primary">Service pricing</a>
+    <a asp-action="Edit" class="btn btn-sm btn-outline-primary">Create invoice</a>
+    <a asp-action="Invoices" class="btn btn-sm btn-outline-primary">Invoice directory</a>
+    <a asp-action="Invoices" asp-route-outstanding="true" class="btn btn-sm btn-outline-primary">Outstanding balances</a>
+    <a asp-action="Reports" class="btn btn-sm btn-outline-primary">Reports and receipts</a>
+</nav>
+@if (TempData["BillingMessage"] is string message) { <p class="alert alert-success" role="status">@message</p> }
+@if (TempData["BillingError"] is string error) { <p class="alert alert-danger" role="alert">@error</p> }

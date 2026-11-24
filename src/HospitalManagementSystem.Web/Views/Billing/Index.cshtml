@@ -1,0 +1,25 @@
+@model BillingDashboard
+@{ ViewData["Title"] = "Billing"; }
+<h1 class="h3">Billing</h1>
+<partial name="_Links" />
+<div class="row g-2 mb-4">
+@foreach (var tile in new[] { ("Draft invoices", Model.Draft.ToString()), ("Issued invoices", Model.Issued.ToString()),
+    ("Unpaid", Model.Unpaid.ToString()), ("Partially paid", Model.Partial.ToString()), ("Paid", Model.Paid.ToString()),
+    ("Outstanding balance", $"LKR {Model.Outstanding:N2}"), ("Today?s valid collections", $"LKR {Model.TodayCollections:N2}"),
+    ("Reversed payments", Model.Reversed.ToString()) })
+{
+    <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body"><strong class="d-block fs-5">@tile.Item2</strong>@tile.Item1</div></div></div>
+}
+</div>
+<div class="row g-3">
+    <section class="col-lg-6"><h2 class="h5">Recent invoices</h2>
+    @if (Model.Recent.Count == 0) { <p>No invoices recorded.</p> }
+    @foreach (var item in Model.Recent)
+    { <p><a asp-action="Details" asp-route-id="@item.Id">@(item.Number ?? "Draft")</a> ? @item.Status ? LKR @item.Total.ToString("N2")</p> }
+    </section>
+    <section class="col-lg-6"><h2 class="h5">Recent payments</h2>
+    @if (Model.Payments.Count == 0) { <p>No payments recorded.</p> }
+    @foreach (var item in Model.Payments)
+    { <p><a asp-action="Receipt" asp-route-id="@item.Id">@item.ReceiptNumber</a> ? LKR @item.Amount.ToString("N2") @(item.Reversal != null ? "? Reversed" : "")</p> }
+    </section>
+</div>
