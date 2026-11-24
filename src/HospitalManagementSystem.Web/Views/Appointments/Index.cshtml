@@ -1,0 +1,38 @@
+@model HospitalManagementSystem.Web.Models.ViewModels.AppointmentSearchViewModel
+@{
+    ViewData["Title"] = "Appointments";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Appointments</h1>
+    @if (User.IsInRole("Administrator") || User.IsInRole("Receptionist"))
+    {
+        <a asp-action="Create" class="btn btn-primary">Book appointment</a>
+    }
+</div>
+@if (TempData["StatusMessage"] is string message) { <div class="alert alert-success">@message</div> }
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-lg-3"><input name="Search" value="@Model.Search" class="form-control" placeholder="Appointment or patient number/name" /></div>
+    <div class="col-lg-2"><select name="DoctorId" class="form-select"><option value="">All doctors</option>@foreach (var doctor in Model.Doctors) { <option value="@doctor.Id" selected="@(Model.DoctorId == doctor.Id)">@doctor.DisplayName</option> }</select></div>
+    <div class="col-lg-2"><select name="DepartmentId" class="form-select"><option value="">All departments</option>@foreach (var department in Model.Departments) { <option value="@department.Id" selected="@(Model.DepartmentId == department.Id)">@department.Name</option> }</select></div>
+    <div class="col-lg-2"><input name="Date" type="date" value="@(Model.Date?.ToString("yyyy-MM-dd"))" class="form-control" /></div>
+    <div class="col-lg-2"><select name="Status" class="form-select"><option value="">All statuses</option>@foreach (var status in Enum.GetValues<HospitalManagementSystem.Web.Models.AppointmentStatus>()) { <option value="@status" selected="@(Model.Status == status)">@status</option> }</select></div>
+    <div class="col-lg-1"><button class="btn btn-outline-primary w-100" type="submit">Filter</button></div>
+    <div class="col-12 d-flex flex-wrap gap-3 align-items-center"><label class="form-check"><input name="UpcomingOnly" value="true" type="checkbox" class="form-check-input" checked="@Model.UpcomingOnly" /><span class="form-check-label">Upcoming only</span></label><a asp-action="Index" asp-route-Date="@DateOnly.FromDateTime(AppointmentService.ToColombo(DateTime.UtcNow)).ToString("yyyy-MM-dd")" class="btn btn-sm btn-outline-secondary">Today</a><a asp-action="Calendar" class="btn btn-sm btn-outline-secondary">Calendar</a><label class="ms-auto">Sort <select name="SortDirection" class="form-select d-inline-block w-auto"><option value="Asc" selected="@(Model.SortDirection == "Asc")">Earliest first</option><option value="Desc" selected="@(Model.SortDirection == "Desc")">Latest first</option></select></label></div>
+</form>
+
+@if (Model.Appointments.Count == 0)
+{
+    <div class="alert alert-light border">No appointments matched these filters.</div>
+}
+else
+{
+    <div class="table-responsive"><table class="table table-striped align-middle"><thead><tr><th>Appointment</th><th>Local time (Asia/Colombo)</th><th>Patient</th><th>Doctor</th><th>Department</th><th>Status</th><th></th></tr></thead><tbody>
+    @foreach (var item in Model.Appointments)
+    {
+        <tr><td>@item.AppointmentNumber</td><td>@item.StartAtLocal.ToString("ddd, dd MMM yyyy HH:mm") - @item.EndAtLocal.ToString("HH:mm")</td><td>@item.PatientDisplayName</td><td>@item.DoctorDisplayName</td><td>@item.DepartmentName</td><td><span class="badge text-bg-light border">@item.Status</span></td><td><a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">View</a></td></tr>
+    }
+    </tbody></table></div>
+    <div class="d-flex justify-content-between align-items-center"><p class="text-muted mb-0">@Model.TotalCount appointment(s)</p><div class="btn-group"><a asp-action="Index" asp-route-Search="@Model.Search" asp-route-DoctorId="@Model.DoctorId" asp-route-DepartmentId="@Model.DepartmentId" asp-route-Date="@Model.Date" asp-route-Status="@Model.Status" asp-route-Page="@(Math.Max(1, Model.Page - 1))" asp-route-SortDirection="@Model.SortDirection" class="btn btn-sm btn-outline-secondary">Previous</a><span class="btn btn-sm btn-outline-secondary disabled">Page @Model.Page</span><a asp-action="Index" asp-route-Search="@Model.Search" asp-route-DoctorId="@Model.DoctorId" asp-route-DepartmentId="@Model.DepartmentId" asp-route-Date="@Model.Date" asp-route-Status="@Model.Status" asp-route-Page="@(Model.Page + 1)" asp-route-SortDirection="@Model.SortDirection" class="btn btn-sm btn-outline-secondary">Next</a></div></div>
+}

@@ -1,0 +1,9 @@
+@model HospitalManagementSystem.Web.Models.ViewModels.AppointmentCalendarViewModel
+@{
+    ViewData["Title"] = "Appointment calendar";
+}
+<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Appointment calendar</h1><a asp-action="Index" class="btn btn-outline-secondary">List view</a></div>
+<form method="get" class="row g-2 mb-3"><div class="col-md-3"><input type="date" name="date" value="@Model.Date.ToString("yyyy-MM-dd")" class="form-control" /></div><div class="col-md-3"><select name="view" class="form-select"><option value="day" selected="@(Model.View == "day")">Day</option><option value="week" selected="@(Model.View == "week")">Week</option><option value="month" selected="@(Model.View == "month")">Month</option></select></div><div class="col-md-3"><select name="doctorId" class="form-select"><option value="">All doctors</option>@foreach (var doctor in Model.Doctors) { <option value="@doctor.Id" selected="@(Model.DoctorId == doctor.Id)">@doctor.DisplayName</option> }</select></div><div class="col-md-3"><button class="btn btn-outline-primary w-100" type="submit">Show</button></div></form>
+<p class="text-muted">Times are shown in Asia/Colombo. Select an appointment for authorized details.</p>
+@if (Model.Appointments.Count == 0) { <div class="alert alert-light border">No appointments in this calendar range.</div> }
+else { <div class="table-responsive"><table class="table table-striped align-middle"><thead><tr><th>Local start</th><th>Appointment</th><th>Doctor</th><th>Patient</th><th>Status</th><th></th></tr></thead><tbody>@foreach (var item in Model.Appointments) { <tr><td>@item.StartAtLocal.ToString("ddd, dd MMM HH:mm")</td><td>@item.AppointmentNumber</td><td>@item.DoctorDisplayName</td><td>@item.PatientDisplayName</td><td>@item.Status</td><td><a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">View</a></td></tr> }</tbody></table></div> }

@@ -59,8 +59,9 @@ Open the URL displayed in the terminal.
 - Stage 3: Identity, login/logout, password change, role authorization, administrator user management and audit logging implemented.
 - Stage 4: Patient directory, registration, profile, editing, archive/reactivation, duplicate warnings and secured document metadata/download routes implemented. Complete EMR workflows remain pending.
 - Stage 5: Doctor profiles, department assignment, weekly schedules, account linking and least-privilege doctor routes implemented. Appointment booking remains pending.
+- Stage 6: Appointment booking, directory, details, rescheduling, cancellation, status lifecycle and day/week/month range calendar implemented. PostgreSQL overlap enforcement is in `AddAppointmentManagement`; no migration was applied automatically.
 
-Clinical, appointment, laboratory, pharmacy, billing, admission, staffing and reporting modules are not implemented yet.
+Clinical/EMR, laboratory, pharmacy, billing, admission, staffing and reporting modules are not implemented yet.
 
 ## Authentication setup
 
@@ -77,7 +78,12 @@ dotnet ef database update InitialDatabaseFoundation --project src/HospitalManage
 dotnet ef database update AddIdentityAndAccessControl --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext
 dotnet ef database update AddPatientManagement --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext
 dotnet ef database update AddDoctorManagement --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext
+dotnet ef database update AddAppointmentManagement --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext
 ```
+
+`AddAppointmentManagement` enables PostgreSQL's `btree_gist` extension and adds a GiST exclusion constraint. The migration account needs permission to create the extension; a DBA may install it beforehand with `CREATE EXTENSION btree_gist;`. Do not grant the application login superuser privileges just for this migration.
+
+The initial appointment policy uses Asia/Colombo display/input time, UTC database instants, 15-minute start increments and durations of 15, 30, 45 or 60 minutes. Appointments use end-exclusive `[start,end)` ranges. Scheduled and CheckedIn appointments block overlaps; Cancelled and Missed appointments release their slots. Completed records remain historical and are not rescheduled.
 
 Create the first Administrator locally after migrations:
 
@@ -100,7 +106,7 @@ dotnet test src/HospitalManagementSystem.Web.Tests/HospitalManagementSystem.Web.
 
 Open `/Account/Login`. `/Dashboard` requires authentication and `/Users` requires the Administrator role.
 
-The automated suite uses EF Core InMemory isolation and never resets or writes to `hospital_management_dev`. Browser-delivered password reset email remains unimplemented until an email provider is configured.
+The automated suite uses unique EF Core InMemory databases and never resets or writes to `hospital_management_dev`. PostgreSQL exclusion-constraint and concurrent-booking integration verification still requires a separately provisioned PostgreSQL test database. Browser-delivered password reset email remains unimplemented until an email provider is configured.
 
 ## Persistent security configuration
 

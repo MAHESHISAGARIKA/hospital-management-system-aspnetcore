@@ -147,7 +147,7 @@ public sealed class DoctorScheduleService(
             return;
 
         await dbContext.Database
-            .SqlQuery<int>($"SELECT pg_advisory_xact_lock(hashtextextended({doctorId.ToString()}, 0)) AS \"Value\"")
+            .SqlQuery<int>($"SELECT 1 AS \"Value\" FROM (SELECT pg_advisory_xact_lock(hashtextextended({doctorId.ToString()}, 0))) AS schedule_lock")
             .FirstAsync(cancellationToken);
     }
 

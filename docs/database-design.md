@@ -12,9 +12,9 @@ This document describes the complete relational architecture proposed for the Ho
 - The existing MVC homepage remains unchanged.
 - No migration is applied and no database data is created automatically.
 
-### Proposed, not yet implemented
+### Implemented after the initial foundation
 
-Identity users and roles, staff, doctor profiles, schedules, appointments, clinical records, laboratories, pharmacy, billing, admissions, documents, audit logs, and backups are architectural proposals only.
+Identity users and roles, audit entries, patient documents, doctors, doctor schedules and appointments are implemented in later stages and tracked in their sections below. Staff management, complete EMR, laboratory, pharmacy, billing, admissions, reporting and backup automation remain proposed.
 
 ### Implemented in Stage 4
 
@@ -32,6 +32,47 @@ Identity users and roles, staff, doctor profiles, schedules, appointments, clini
 - Initial schedules use local Asia/Colombo working hours. Storage remains `TimeOnly`/local time values and overnight sessions are rejected.
 - Concurrent schedule writes use PostgreSQL transaction-scoped advisory locks plus overlap checks and database time-range/day constraints.
 - Department records use `IsActive` to prevent assignments to inactive departments.
+
+### Implemented in Stage 6: Appointments
+
+`appointments` references one `patients` row, one `doctors` row and one `departments` row. All three foreign keys use `RESTRICT` deletion behavior so appointment history cannot be orphaned by deleting a referenced record.
+
+| Column | PostgreSQL type | Constraints |
+|---|---|---|
+| `Id` | `uuid` | Primary key |
+| `AppointmentNumber` | `varchar(30)` | Required, unique, sequence-generated |
+| `PatientId` | `uuid` | Required FK to `patients` |
+| `DoctorId` | `uuid` | Required FK to `doctors` |
+| `DepartmentId` | `uuid` | Required FK to `departments` |
+| `StartAtUtc`, `EndAtUtc` | `timestamp with time zone` | Required; `EndAtUtc > StartAtUtc` |
+| `Status` | `varchar(20)` | Required, checked against supported lifecycle values |
+| `ReasonForVisit` | `varchar(300)` | Optional |
+| `Notes` | `varchar(500)` | Optional, administrative only; not clinical notes |
+| `CancellationReason` | `varchar(300)` | Required by cancellation service when cancelling |
+| `CancelledAtUtc` | `timestamp with time zone` | Optional |
+| `CancelledByUserId` | `uuid` | Optional actor identifier |
+| `IdempotencyKey` | `varchar(64)` | Required, unique |
+| `CreatedAtUtc`, `UpdatedAtUtc` | `timestamp with time zone` | Required |
+| `CreatedByUserId`, `UpdatedByUserId` | `uuid` | Required actor identifiers |
+| `ConcurrencyToken` | `uuid` | Required optimistic concurrency token |
+
+Appointment intervals use end-exclusive `[StartAtUtc, EndAtUtc)` semantics. The calendar/query layer converts those UTC instants to `Asia/Colombo` for presentation.
+
+The appointment interval is stored as UTC instants, never as local wall-clock timestamps. MVC input and display convert through `Asia/Colombo`. Weekly schedule entries remain local `TimeOnly` values and are compared to the requested Colombo-local date/time before conversion.
+
+PostgreSQL installs `btree_gist` and applies an exclusion constraint over `(DoctorId WITH =, tstzrange(StartAtUtc, EndAtUtc, '[)') WITH &&)` for `Scheduled` and `CheckedIn`. This makes interval conflicts database-enforced under simultaneous transactions. End-exclusive ranges allow a new appointment to begin exactly when another ends. `Cancelled` and `Missed` rows do not participate, so their times may be reused. The extension must be present; the migration may need DBA permission to install it.
+
+Booking requests require a unique idempotency key. Retrying the same key and payload by the same actor returns the original appointment; reusing the key for a different payload is rejected. Sequence-backed appointment numbers are independent of idempotency.
+
+#### Appointment lifecycle
+
+- `Scheduled` -> `CheckedIn`, `Cancelled` or `Missed`
+- `CheckedIn` -> `Completed` or `Cancelled`
+- `Completed`, `Cancelled` and `Missed` are terminal
+- Cancellation requires a reason and records cancellation time and actor
+- Rescheduling is permitted only while `Scheduled`; it changes the appointment and audit event atomically and uses the concurrency token
+
+The implementation does not define clinical completion or billing consequences. Appointment duration options are initially 15, 30, 45 or 60 minutes, with starts on 15-minute boundaries. This is a configurable-policy candidate, not an approved hospital-wide rule.
 
 ## Core conventions
 
@@ -180,8 +221,8 @@ erDiagram
     APPLICATION_USER ||--o{ USER_ROLE : has
     ROLE ||--o{ USER_ROLE : assigned_to
 
-    DOCTOR_PROFILE ||--o{ DOCTOR_SCHEDULE : defines
-    DOCTOR_PROFILE ||--o{ APPOINTMENT : attends
+    DOCTOR ||--o{ DOCTOR_SCHEDULE : defines
+    DOCTOR ||--o{ APPOINTMENT : attends
 
     ENCOUNTER ||--o{ MEDICAL_RECORD : contains
     ENCOUNTER ||--o{ DIAGNOSIS : records
@@ -242,6 +283,28 @@ erDiagram
         uuid DepartmentId FK
         uuid ApplicationUserId FK
         boolean IsActive
+        timestamptz CreatedAtUtc
+        timestamptz UpdatedAtUtc
+        uuid CreatedByUserId
+        uuid UpdatedByUserId
+        uuid ConcurrencyToken
+    }
+
+    APPOINTMENT {
+        uuid Id PK
+        varchar30 AppointmentNumber UK
+        uuid PatientId FK
+        uuid DoctorId FK
+        uuid DepartmentId FK
+        timestamptz StartAtUtc
+        timestamptz EndAtUtc
+        varchar20 Status
+        varchar300 ReasonForVisit
+        varchar500 Notes
+        varchar300 CancellationReason
+        timestamptz CancelledAtUtc
+        uuid CancelledByUserId
+        varchar64 IdempotencyKey UK
         timestamptz CreatedAtUtc
         timestamptz UpdatedAtUtc
         uuid CreatedByUserId
