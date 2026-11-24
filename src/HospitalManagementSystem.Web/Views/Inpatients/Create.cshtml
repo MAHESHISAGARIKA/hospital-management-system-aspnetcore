@@ -1,0 +1,20 @@
+@model AdmissionEditor
+@{ ViewData["Title"] = "Register inpatient admission"; }
+<h1 class="h3">Register inpatient admission</h1>
+<partial name="_Navigation" />
+@if (Model.Input.EncounterId.HasValue) { <p>Registers an admission linked to this outpatient consultation. The existing visit stays unchanged.</p> }
+<form asp-action="Create" method="post" class="row g-3" data-stay-form>
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input asp-for="Input.RequestKey" type="hidden" /><input asp-for="Input.EncounterId" type="hidden" />
+    <label class="col-md-6">Patient <select asp-for="Input.PatientId" class="form-select" required>
+    @if (!Model.Input.EncounterId.HasValue) { <option value="">Select patient</option> }
+    @foreach (var patient in Model.Patients) { <option value="@patient.Id">@patient.PatientNumber ? @patient.FirstName @patient.LastName</option> }
+    </select></label>
+    <label class="col-md-6">Attending Doctor <select asp-for="Input.DoctorId" class="form-select" required>
+    @if (!Model.Input.EncounterId.HasValue) { <option value="">Select Doctor</option> }
+    @foreach (var doctor in Model.Doctors) { <option value="@doctor.Id">@doctor.FirstName @doctor.LastName</option> }
+    </select></label>
+    <label class="col-12">Admission reason <textarea asp-for="Input.Reason" maxlength="500" required class="form-control"></textarea></label>
+    <div><button class="btn btn-primary">Register pending admission</button></div>
+</form>
+@section Scripts { <script src="~/js/stays.js" asp-append-version="true"></script> }

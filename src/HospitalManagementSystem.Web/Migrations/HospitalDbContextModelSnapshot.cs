@@ -244,6 +244,52 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.ToTable("audit_log_entries", (string)null);
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.BedAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdmissionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BedId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("EndedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("EndedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("StartedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TransferReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BedId", "StartedAtUtc");
+
+                    b.HasIndex(new[] { "AdmissionId" }, "ux_allocation_current_admission")
+                        .IsUnique()
+                        .HasFilter("\"EndedAtUtc\" IS NULL");
+
+                    b.HasIndex(new[] { "BedId" }, "ux_allocation_current_bed")
+                        .IsUnique()
+                        .HasFilter("\"EndedAtUtc\" IS NULL");
+
+                    b.ToTable("bed_allocations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_bed_allocation_interval", "(\"EndedAtUtc\" IS NULL) = (\"EndedByUserId\" IS NULL) AND (\"EndedAtUtc\" IS NULL OR \"EndedAtUtc\" > \"StartedAtUtc\")");
+                        });
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.BillableService", b =>
                 {
                     b.Property<Guid>("Id")
@@ -639,6 +685,324 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.HasIndex("DoctorId", "DayOfWeek", "IsActive");
 
                     b.ToTable("doctor_schedules", (string)null);
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.HospitalBed", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Condition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<Guid>("Token")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("WardId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WardId", "Label")
+                        .IsUnique();
+
+                    b.ToTable("hospital_beds", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_bed_condition", "\"Condition\" IN ('Ready','Cleaning','Maintenance','Unavailable')");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.HospitalWard", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<Guid>("Token")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("DepartmentId");
+
+                    b.ToTable("hospital_wards", (string)null);
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.InpatientAdmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AdmittedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AdmittedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ApprovedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CancelledByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
+                    b.Property<Guid?>("OriginEncounterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("RequestKey")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("Token")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DoctorId");
+
+                    b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.HasIndex("OriginEncounterId")
+                        .IsUnique()
+                        .HasFilter("\"OriginEncounterId\" IS NOT NULL AND \"Status\" <> 'Cancelled'");
+
+                    b.HasIndex("CreatedByUserId", "RequestKey")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "AdmittedAtUtc");
+
+                    b.HasIndex(new[] { "PatientId" }, "ux_admission_patient_open")
+                        .IsUnique()
+                        .HasFilter("\"Status\" IN ('Pending','Approved','Admitted')");
+
+                    b.ToTable("inpatient_admissions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_admission_approval", "(\"ApprovedAtUtc\" IS NULL) = (\"ApprovedByUserId\" IS NULL) AND (\"Status\" NOT IN ('Approved','Admitted','Discharged') OR \"ApprovedAtUtc\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_admission_cancel", "(\"Status\" = 'Cancelled') = (\"CancelledAtUtc\" IS NOT NULL AND \"CancelledByUserId\" IS NOT NULL AND \"CancellationReason\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_admission_start", "(\"Status\" IN ('Admitted','Discharged')) = (\"AdmittedAtUtc\" IS NOT NULL AND \"AdmittedByUserId\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_admission_status", "\"Status\" IN ('Pending','Approved','Admitted','Discharged','Cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.InpatientCareAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdmissionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AssignedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("AssignedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("EndedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("EndedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("NurseUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NurseUserId");
+
+                    b.HasIndex("AdmissionId", "NurseUserId")
+                        .IsUnique()
+                        .HasFilter("\"EndedAtUtc\" IS NULL");
+
+                    b.ToTable("inpatient_care_assignments", (string)null);
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.InpatientDischarge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdmissionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Diagnosis")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Disposition")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("SignedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("SignedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdmissionId")
+                        .IsUnique();
+
+                    b.ToTable("inpatient_discharges", (string)null);
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.InpatientObservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdmissionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CorrectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("CorrectsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RecordedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdmissionId");
+
+                    b.HasIndex("CorrectsId")
+                        .IsUnique();
+
+                    b.ToTable("inpatient_observations", (string)null);
                 });
 
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryOrder", b =>
@@ -1390,6 +1754,9 @@ namespace HospitalManagementSystem.Web.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AdmissionId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("AppointmentId")
                         .HasColumnType("uuid");
 
@@ -1441,6 +1808,10 @@ namespace HospitalManagementSystem.Web.Migrations
 
                     b.HasIndex("PriceId");
 
+                    b.HasIndex(new[] { "AdmissionId" }, "ux_billing_admission_claim")
+                        .IsUnique()
+                        .HasFilter("\"Claimed\" AND \"AdmissionId\" IS NOT NULL");
+
                     b.HasIndex(new[] { "AppointmentId" }, "ux_billing_appointment_claim")
                         .IsUnique()
                         .HasFilter("\"Claimed\" AND \"AppointmentId\" IS NOT NULL");
@@ -1457,7 +1828,7 @@ namespace HospitalManagementSystem.Web.Migrations
                         {
                             t.HasCheckConstraint("ck_invoice_item_amount", "\"Quantity\" > 0 AND \"UnitPrice\" >= 0 AND \"Total\" = round(\"Quantity\" * \"UnitPrice\", 2)");
 
-                            t.HasCheckConstraint("ck_invoice_item_source", "(\"Category\" = 'Consultation' AND \"AppointmentId\" IS NOT NULL AND \"LabItemId\" IS NULL AND \"DispenseItemId\" IS NULL) OR (\"Category\" = 'Laboratory' AND \"LabItemId\" IS NOT NULL AND \"AppointmentId\" IS NULL AND \"DispenseItemId\" IS NULL) OR (\"Category\" = 'Pharmacy' AND \"DispenseItemId\" IS NOT NULL AND \"AppointmentId\" IS NULL AND \"LabItemId\" IS NULL) OR (\"Category\" = 'Other' AND \"AppointmentId\" IS NULL AND \"LabItemId\" IS NULL AND \"DispenseItemId\" IS NULL)");
+                            t.HasCheckConstraint("ck_invoice_item_source", "(\"Category\" = 'Admission' AND \"AdmissionId\" IS NOT NULL AND \"AppointmentId\" IS NULL AND \"LabItemId\" IS NULL AND \"DispenseItemId\" IS NULL) OR (\"AdmissionId\" IS NULL AND ((\"Category\" = 'Consultation' AND \"AppointmentId\" IS NOT NULL AND \"LabItemId\" IS NULL AND \"DispenseItemId\" IS NULL) OR (\"Category\" = 'Laboratory' AND \"LabItemId\" IS NOT NULL AND \"AppointmentId\" IS NULL AND \"DispenseItemId\" IS NULL) OR (\"Category\" = 'Pharmacy' AND \"DispenseItemId\" IS NOT NULL AND \"AppointmentId\" IS NULL AND \"LabItemId\" IS NULL) OR (\"Category\" = 'Other' AND \"AppointmentId\" IS NULL AND \"LabItemId\" IS NULL AND \"DispenseItemId\" IS NULL)))");
                         });
                 });
 
@@ -1925,6 +2296,23 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.BedAllocation", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.InpatientAdmission", null)
+                        .WithMany("Allocations")
+                        .HasForeignKey("AdmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.HospitalBed", "Bed")
+                        .WithMany("Allocations")
+                        .HasForeignKey("BedId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Bed");
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.BillingPrice", b =>
                 {
                     b.HasOne("HospitalManagementSystem.Web.Models.BillableService", null)
@@ -2006,6 +2394,89 @@ namespace HospitalManagementSystem.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Doctor");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.HospitalBed", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.HospitalWard", "Ward")
+                        .WithMany("Beds")
+                        .HasForeignKey("WardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Ward");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.HospitalWard", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.Department", null)
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.InpatientAdmission", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.Doctor", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.ClinicalEncounter", "OriginEncounter")
+                        .WithMany()
+                        .HasForeignKey("OriginEncounterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("OriginEncounter");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.InpatientCareAssignment", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.InpatientAdmission", null)
+                        .WithMany("Assignments")
+                        .HasForeignKey("AdmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("NurseUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.InpatientDischarge", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.InpatientAdmission", null)
+                        .WithOne("Discharge")
+                        .HasForeignKey("HospitalManagementSystem.Web.Models.InpatientDischarge", "AdmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.InpatientObservation", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.InpatientAdmission", null)
+                        .WithMany("Observations")
+                        .HasForeignKey("AdmissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.InpatientObservation", null)
+                        .WithMany()
+                        .HasForeignKey("CorrectsId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryOrder", b =>
@@ -2107,6 +2578,11 @@ namespace HospitalManagementSystem.Web.Migrations
 
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientInvoiceItem", b =>
                 {
+                    b.HasOne("HospitalManagementSystem.Web.Models.InpatientAdmission", null)
+                        .WithMany()
+                        .HasForeignKey("AdmissionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("HospitalManagementSystem.Web.Models.Appointment", null)
                         .WithMany()
                         .HasForeignKey("AppointmentId")
@@ -2284,6 +2760,27 @@ namespace HospitalManagementSystem.Web.Migrations
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalRecord", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.HospitalBed", b =>
+                {
+                    b.Navigation("Allocations");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.HospitalWard", b =>
+                {
+                    b.Navigation("Beds");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.InpatientAdmission", b =>
+                {
+                    b.Navigation("Allocations");
+
+                    b.Navigation("Assignments");
+
+                    b.Navigation("Discharge");
+
+                    b.Navigation("Observations");
                 });
 
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryOrder", b =>

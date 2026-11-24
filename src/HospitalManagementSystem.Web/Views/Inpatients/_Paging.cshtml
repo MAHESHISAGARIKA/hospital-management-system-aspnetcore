@@ -1,0 +1,18 @@
+@model (int Current, int Total)
+@{
+    var pages = Math.Max(1, (int)Math.Ceiling((double)Model.Total / InpatientService.PageSize));
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var route = Context.Request.Query.Where(q => !q.Key.Equals("Page", StringComparison.OrdinalIgnoreCase))
+        .ToDictionary(q => q.Key, q => q.Value.ToString(), StringComparer.OrdinalIgnoreCase);
+}
+<nav aria-label="Results pagination" class="d-flex align-items-center gap-2 d-print-none">
+@foreach (var link in new[] { ("Previous", Model.Current - 1), ("Next", Model.Current + 1) })
+{
+    if (link.Item2 >= 1 && link.Item2 <= pages)
+    {
+        var values = new Dictionary<string,string>(route) { ["Page"] = link.Item2.ToString() };
+        <a asp-action="@action" asp-all-route-data="values" class="btn btn-sm btn-outline-secondary">@link.Item1</a>
+    }
+}
+<span>Page @Model.Current of @pages ? @Model.Total records</span>
+</nav>

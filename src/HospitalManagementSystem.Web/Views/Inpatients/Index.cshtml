@@ -1,0 +1,38 @@
+@model StayPage<StayAdmissionRow>
+@{ ViewData["Title"] = "Inpatient admissions"; var filter = Model.Filter; }
+<h1 class="h3">Inpatient admissions</h1>
+<partial name="_Navigation" /><partial name="_Print" />
+@if (ViewData["Census"] is IReadOnlyList<WardCensus> census)
+{
+    <section class="mb-4"><h2 class="h5">Current ward occupancy</h2><partial name="_Census" model="census" /></section>
+}
+<form asp-action="Index" method="get" class="row g-2 mb-3 d-print-none">
+    <label class="col-md-3">Admission or patient number <input name="Search" value="@filter.Search" maxlength="100" class="form-control" /></label>
+    <label class="col-md-2">From <input type="date" name="From" value="@(filter.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">To <input type="date" name="To" value="@(filter.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">Status <select name="Status" class="form-select"><option value="">All permitted</option>
+    @foreach (var status in Enum.GetValues<AdmissionStatus>()) { <option value="@status" selected="@(filter.Status == status)">@status</option> }
+    </select></label>
+    @if (ViewData["Census"] is IReadOnlyList<WardCensus> wards)
+    {
+        <label class="col-md-2">Current ward <select name="WardId" class="form-select"><option value="">All</option>
+        @foreach (var ward in wards) { <option value="@ward.Id" selected="@(filter.WardId == ward.Id)">@ward.Code</option> }
+        </select></label>
+    }
+    <label class="col-md-2 align-self-end"><input type="checkbox" name="Oldest" value="true" checked="@filter.Oldest" /> Oldest first</label>
+    <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+</form>
+@if (Model.Rows.Count == 0) { <p>No admissions match these filters.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Admission</th><th>Patient</th><th>Doctor</th><th>Ward / bed</th><th>Status</th><th>Recorded (Asia/Colombo)</th><th>Length of stay</th></tr></thead><tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr><td><a asp-action="Details" asp-route-id="@row.Id">@row.Number</a></td><td>@row.PatientNumber ? @row.PatientName</td>
+        <td>@row.DoctorName</td><td>@row.CurrentBed</td><td>@row.Status</td>
+        <td>@AppointmentService.ToColombo((filter.Status == AdmissionStatus.Discharged ? row.DischargedAtUtc : row.AdmittedAtUtc) ?? row.CreatedAtUtc).ToString("dd MMM yyyy HH:mm")</td>
+        <td>@(row.AdmittedAtUtc.HasValue && row.DischargedAtUtc.HasValue ? $"{(row.DischargedAtUtc.Value - row.AdmittedAtUtc.Value).TotalHours:0.0} h" : "?")</td></tr>
+    }
+    </tbody></table></div><partial name="_Paging" model="(filter.Page, Model.Total)" />
+}
+@section Scripts { <script src="~/js/stays.js" asp-append-version="true"></script> }

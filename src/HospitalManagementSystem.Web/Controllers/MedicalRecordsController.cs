@@ -4,6 +4,7 @@ using HospitalManagementSystem.Web.Models.ViewModels;
 using HospitalManagementSystem.Web.Services.Clinical;
 using HospitalManagementSystem.Web.Services.Laboratory;
 using HospitalManagementSystem.Web.Services.Pharmacy;
+using HospitalManagementSystem.Web.Services.Inpatients;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +13,7 @@ namespace HospitalManagementSystem.Web.Controllers;
 [Authorize(Roles = HospitalRoles.Doctor)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [AutoValidateAntiforgeryToken]
-public sealed class MedicalRecordsController(ClinicalRecordService clinical, LaboratoryService laboratory, PharmacyService pharmacy) : Controller
+public sealed class MedicalRecordsController(ClinicalRecordService clinical, LaboratoryService laboratory, PharmacyService pharmacy, InpatientService stays) : Controller
 {
     [HttpGet]
     public Task<IActionResult> Index(CancellationToken ct)
@@ -100,6 +101,9 @@ public sealed class MedicalRecordsController(ClinicalRecordService clinical, Lab
                 (!report.RecordId.HasValue || report.RecordId == record.Id)).Select(record => record.Id).ToArray();
         if (prescriptions.Length > 0)
             ViewData["DispensingStatuses"] = await pharmacy.DoctorStatusesAsync(User, prescriptions, ct);
+        if (report.Title == "Patient clinical timeline" && report.Encounters.Count > 0)
+            ViewData["InpatientHistory"] = await stays.ClinicalHistoryAsync(User, report.Encounters[0].PatientId, report.EncounterId, ct);
+
         return View("ClinicalReport", report);
     }
 

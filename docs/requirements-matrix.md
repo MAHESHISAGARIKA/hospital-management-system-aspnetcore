@@ -13,7 +13,8 @@ This document maps the proposed Hospital Management System requirements to futur
 - **Stage 8 implemented:** Laboratory catalog, doctor-scoped requests, specimen tracking, staff result verification, corrections and browser-printable reports. Native PostgreSQL verification requires a disposable database.
 - **Stage 9 implemented:** Catalog, batch stock, ledger, expiry and low-stock monitoring, and partial dispensing against signed EMR prescriptions. PostgreSQL verification is opt-in on a disposable database.
 - **Stage 10 implemented:** LKR price catalog, clinical-source invoices, payment recording and reversals, receipt printing, outstanding balances and billing reports. PostgreSQL verification is opt-in.
-- **Not implemented:** admission, staffing and reporting modules.
+- **Stage 11 implemented:** OPD worklists and summaries on existing appointments, ward and bed management, approved stays and transfers, scoped observations, Doctor-signed discharge and manual Admission billing. PostgreSQL verification remains opt-in.
+- **Not implemented:** staffing and reporting modules.
 
 | ID | Requirement | Proposed module | Acceptance criteria | Future tests |
 |---|---|---|---|---|
@@ -40,7 +41,7 @@ This document maps the proposed Hospital Management System requirements to futur
 | PHA-01 | Pharmacy inventory and stock control | Pharmacy | Stock changes are tracked and cannot become negative without approval/policy | Stock movement tests, negative stock tests, expiry tests |
 | PHA-02 | Prescription processing | Pharmacy | Dispensing reduces stock and records the prescription, quantity and dispenser | Dispensing tests, duplicate dispense tests, stock integrity tests |
 | PHA-03 | Expiry monitoring | Pharmacy | Expiring and expired batches are reported and unavailable for normal dispensing | Expiry boundary tests, batch selection tests |
-| BIL-01 | Billing charges | Billing | Eligible consultation, laboratory and pharmacy sources produce auditable invoice lines. Admission charging awaits Stage 11. | Charge tests, total tests, authorization tests |
+| BIL-01 | Billing charges | Billing | Eligible consultation, laboratory and pharmacy sources produce auditable invoice lines. A discharged admission can support one explicitly priced manual charge. | Charge tests, total tests, authorization tests |
 | BIL-02 | Invoices and payments | Billing | Invoice totals and payment allocations reconcile and cannot be silently altered | Invoice tests, overpayment/refund tests, payment tests |
 | BIL-03 | Receipts | Billing | A successful payment produces a traceable receipt | Receipt tests, duplicate payment tests |
 | ADM-01 | Inpatient/outpatient management | Admissions | Each encounter has the correct patient, type, status and accountable provider | Admission/discharge tests, invalid transition tests |

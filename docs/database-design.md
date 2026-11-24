@@ -103,6 +103,10 @@ AddPharmacyManagement adds medicines, medicine batches, stock movements, dispens
 
 AddBillingManagement follows AddPharmacyManagement. It adds billing services, effective prices, invoices, invoice items, payments and payment reversals. Issued invoice items snapshot descriptions, prices, source identifiers and LKR totals. Receipts are identified by the original payment, and a reversal is a separate immutable relation. Restrictive foreign keys preserve clinical and financial history. See [Billing and Payments](billing-management.md) for scope and reporting rules.
 
+### Implemented in Stage 11: Inpatient and Outpatient Management
+
+AddInpatientOutpatientManagement follows AddBillingManagement. It adds seven tables for wards, beds, admissions, allocations, nursing assignments, observations and signed discharge. Admissions reuse Patient and Doctor, and optionally reference the originating ClinicalEncounter. OPD reuses Appointment and ClinicalEncounter. PostgreSQL uses half-open timestamp ranges, partial unique indexes and deferred checks to enforce exclusive occupancy and a single open admission per patient. Invoice items can reference a discharged admission through a restrictive foreign key. See [Inpatient and Outpatient Management](inpatient-outpatient-management.md).
+
 ## Core conventions
 
 - PostgreSQL `uuid` values are used for primary and foreign keys.

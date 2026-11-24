@@ -32,3 +32,8 @@ Authorized doctors request tests from an open encounter and view scoped order st
 ## Pharmacy integration
 
 Prescribers can record the unit for the total quantity independently of the dose unit. A signed prescription exposes a dispensing status to its authorized Doctor. Pharmacy records reference the immutable original item and revision. A void or signed successor stops further dispensing from the old revision. A successor with dispensing anywhere in its ancestry requires reconciliation. See [Pharmacy Management](pharmacy-management.md).
+
+
+## Inpatient and OPD integration
+
+Doctors can create a pending stay from their authorized outpatient encounter. The original encounter keeps its existing status and policies. Inpatient Doctor access follows the attending profile; nursing access follows an active assignment. Inpatient observations and signed discharge do not create diagnoses, prescriptions or laboratory records. Existing linked clinical records retain EMR permissions. Direct admission without an OPD encounter has its own stay record and observations. A general appointmentless clinical encounter and cross-provider care access remain deferred. See [Inpatient and Outpatient Management](inpatient-outpatient-management.md).

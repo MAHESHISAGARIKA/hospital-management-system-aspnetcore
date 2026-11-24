@@ -38,6 +38,18 @@
         </label>
         <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
     </form>
+    @if (ViewData["InpatientHistory"] is StayAdmissionRow[] admissions)
+    {
+        <section class="mb-3"><h2 class="h5">Inpatient history for your assigned stays</h2>
+        @foreach (var stay in admissions)
+        {
+            var day = DateOnly.FromDateTime(AppointmentService.ToColombo(stay.AdmittedAtUtc ?? stay.CreatedAtUtc));
+            if (Model.From.HasValue && day < Model.From.Value || Model.To.HasValue && day > Model.To.Value) continue;
+            <p><a asp-controller="Inpatients" asp-action="Details" asp-route-id="@stay.Id">@stay.Number</a> ? @stay.Status ? @day.ToString("dd MMM yyyy")</p>
+        }
+        @if (admissions.Length == 0) { <p>No assigned inpatient stays.</p> }
+        </section>
+    }
     <ol class="list-group list-group-numbered mb-4">
         @foreach (var entry in Model.Encounters.SelectMany(visit => visit.Records)
             .Where(record => (!Model.From.HasValue || record.RecordedDate >= Model.From.Value) &&
@@ -75,6 +87,10 @@
                 <div class="d-print-none d-flex flex-wrap gap-2">
                     @if (manage)
                     {
+                        @if (encounter.AppointmentId.HasValue)
+                        {
+                            <a asp-controller="Inpatients" asp-action="Create" asp-route-encounterId="@encounter.Id" class="btn btn-sm btn-outline-secondary">Register linked admission</a>
+                        }
                         <a asp-action="Patient" asp-route-id="@encounter.PatientId" class="btn btn-sm btn-outline-secondary">Patient timeline</a>
                         <a asp-action="Report" asp-route-id="@encounter.Id" class="btn btn-sm btn-outline-primary">Encounter report</a>
                     }

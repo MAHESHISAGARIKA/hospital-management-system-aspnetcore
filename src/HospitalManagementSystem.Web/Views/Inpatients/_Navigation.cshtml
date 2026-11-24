@@ -1,0 +1,18 @@
+<nav aria-label="Inpatients" class="d-flex gap-2 flex-wrap mb-3 d-print-none">
+    @if (User.IsInRole("Doctor") || User.IsInRole("Receptionist") || User.IsInRole("Nurse"))
+    {
+        <a asp-action="Index" asp-route-status="" class="btn btn-sm btn-outline-primary">Admissions</a>
+        <a asp-action="Index" asp-route-status="Admitted" class="btn btn-sm btn-outline-primary">Current patients</a>
+        <a asp-action="Index" asp-route-status="Discharged" class="btn btn-sm btn-outline-primary">Discharge history</a>
+    }
+    @if (User.IsInRole("Receptionist"))
+    { <a asp-action="Create" class="btn btn-sm btn-primary">Register admission</a> }
+    @if (User.IsInRole("Administrator") || User.IsInRole("Receptionist"))
+    {
+        <a asp-action="Wards" class="btn btn-sm btn-outline-primary">Ward census</a>
+        <a asp-action="Beds" class="btn btn-sm btn-outline-primary">Beds</a>
+        <a asp-action="Beds" asp-route-available="true" class="btn btn-sm btn-outline-primary">Available beds</a>
+    }
+</nav>
+@if (TempData["StayMessage"] is string message) { <p class="alert alert-success" role="status">@message</p> }
+@if (TempData["StayError"] is string error) { <p class="alert alert-danger" role="alert">@error</p> }

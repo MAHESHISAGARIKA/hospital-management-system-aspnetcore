@@ -4,7 +4,7 @@
 
 Enabled Accountant accounts are authorized for this hospital-wide billing ledger. The project has no facility or caseload assignments. Every billing route and service operation checks this role. There is no clinical or financial override for Administrators or other roles. The UI receives only patient identification and approved billing descriptions and source metadata. Sensitive responses use no-store caching, and POSTs require anti-forgery protection.
 
-Configure Consultation, Laboratory, Pharmacy, Admission or Other services. Source mappings are explicit catalog codes for Laboratory and Pharmacy. Admission can be configured for future use. No Admission charges can be posted until that module exists. Prices are immutable, non-overlapping periods with an inclusive start and an exclusive end. Bounded periods allow future prices to be added without changing existing periods. A missing price blocks a charge. Free services require an explicit zero price. No default prices are seeded.
+Configure Consultation, Laboratory, Pharmacy, Admission or Other services. Source mappings are explicit catalog codes for Laboratory and Pharmacy. Admission services can be configured for a manually selected discharged stay. Prices are immutable, non-overlapping periods with an inclusive start and an exclusive end. Bounded periods allow future prices to be added without changing existing periods. A missing price blocks a charge. Free services require an explicit zero price. No default prices are seeded.
 
 ## Invoices and clinical integration
 
@@ -32,4 +32,7 @@ AddBillingManagement follows AddPharmacyManagement. Generate or manually apply i
 4. Print the receipt, reverse the transfer, and verify the restored invoice balance and preserved reversed receipt. Confirm void is blocked until all payments have been reversed. Void and create a linked replacement.
 5. Check outstanding balances and compare valid collections with issued totals. Try opening a receipt and posting a payment as a Departmental or Administrator account without the Accountant role.
 
-Deferred policies include due dates and aged receivables, formal revenue recognition, general ledger, payment gateways, cards, insurance, taxes, discounts, credit notes, partial refunds, automatic charging, server-side PDFs and Admission source integration.
+Deferred policies include due dates and aged receivables, formal revenue recognition, general ledger, payment gateways, cards, insurance, taxes, discounts, credit notes, partial refunds, automatic charging, server-side PDFs.
+
+
+Stage 11 permits one manually selected Admission charge for a discharged stay belonging to the invoice patient. The service date is the Colombo discharge date, quantity is one, and the existing price snapshot and exclusive issue claim rules apply. Ward tariffs and automatic room-days are deferred. Accountant screens receive only source reference, date and quantity.

@@ -1,0 +1,19 @@
+@model (Guid Admission, Guid Token, InpatientObservation? Record)
+<form asp-action="Observation" asp-route-id="@Model.Admission" method="post" class="row g-2 mb-3 align-items-end" data-stay-form>
+    <input type="hidden" name="Token" value="@Model.Token" />
+    @if (Model.Record is not null)
+    {
+        <input type="hidden" name="CorrectsId" value="@Model.Record.Id" /><input type="hidden" name="Kind" value="@Model.Record.Kind" />
+        <label class="col-md-4">Correction reason <input name="Reason" required maxlength="500" class="form-control" /></label>
+    }
+    else
+    {
+        <label class="col-md-4">Measurement and unit <select name="Kind" required class="form-select">
+            <option value="">Choose measurement</option><option value="TemperatureCelsius">Temperature (?C)</option>
+            <option value="PulsePerMinute">Pulse (per minute)</option><option value="RespirationsPerMinute">Respirations (per minute)</option>
+            <option value="OxygenSaturationPercent">Oxygen saturation (%)</option>
+        </select></label>
+    }
+    <label class="col-md-3">Value <input name="Value" inputmode="decimal" required class="form-control" /></label>
+    <div class="col-md-3"><button class="btn btn-outline-primary">Save observation</button></div>
+</form>

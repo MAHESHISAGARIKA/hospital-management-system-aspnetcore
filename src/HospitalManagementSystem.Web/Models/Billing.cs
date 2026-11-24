@@ -66,6 +66,7 @@ public sealed class PatientInvoiceItem
     public BillingCategory Category { get; set; }
     public string Code { get; set; } = "";
     public string Name { get; set; } = "";
+    public Guid? AdmissionId { get; set; }
     public Guid? AppointmentId { get; set; }
     public Guid? LabItemId { get; set; }
     public Guid? DispenseItemId { get; set; }
