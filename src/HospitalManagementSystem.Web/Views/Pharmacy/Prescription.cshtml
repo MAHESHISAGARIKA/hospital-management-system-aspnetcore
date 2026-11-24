@@ -1,0 +1,58 @@
+@model DispensingPage
+@{
+    ViewData["Title"] = "Prescription dispensing";
+    var number = 0;
+    var usable = Model.CanDispense && Model.Items.Any(item => item.Remaining > 0 && item.Batches.Count > 0);
+}
+<h1 class="h3">Prescription dispensing</h1>
+<partial name="_Links" /><partial name="_Messages" />
+<p>@Model.Prescription.PatientName ? @Model.Prescription.PatientNumber ? Dr. @Model.Prescription.Doctor</p>
+<p class="text-break">@Model.Prescription.Id <span class="badge text-bg-light border">@Model.Prescription.Status</span></p>
+@if (!usable) { <p class="alert alert-light border">No lines are currently available to dispense. Review the prescribed quantity and unit, eligible stock, or revision history.</p> }
+<form asp-action="Dispense" asp-route-id="@Model.Prescription.Id" method="post" data-pharmacy-form data-confirm="Confirm the patient and selected batches before dispensing.">
+    <input type="hidden" name="RequestKey" value="@Model.RequestKey" />
+    @foreach (var choice in Model.Items)
+    {
+        var item = choice.Item;
+        <section class="card mb-3"><div class="card-body">
+            <h2 class="h5">@item.Medicine @item.Strength</h2>
+            <p>@item.Dose @item.DoseUnit ? @item.Route ? @item.Frequency ? @item.Duration</p>
+            @if (item.Instructions is not null) { <p class="text-break">@item.Instructions</p> }
+            <p>Authorized @(item.Quantity?.ToString() ?? "unspecified") @item.DispenseUnit ? Dispensed @((item.Quantity.GetValueOrDefault() - choice.Remaining).ToString("0.###")) ? Remaining @choice.Remaining.ToString("0.###")</p>
+            @if (Model.CanDispense && choice.Remaining > 0 && choice.Batches.Count > 0)
+            {
+                @for (var index = 0; index < Math.Min(3, choice.Batches.Count); index++)
+                {
+                    var name = $"Lines[{number++}]";
+                    <div class="row g-2 mb-2">
+                        <input type="hidden" name="@(name).ItemId" value="@item.Id" />
+                        <label class="col-md-5">Medicine and batch @(index + 1) <select name="@(name).BatchId" class="form-select">
+                            <option value="@Guid.Empty">Choose eligible stock</option>
+                            @foreach (var batch in choice.Batches)
+                            {
+                                <option value="@batch.Id">@batch.Medicine.Code ? @batch.Medicine.GenericName ? @batch.Medicine.BrandName ? @batch.Medicine.Form ? @batch.Number ? @batch.Expiry.ToString("yyyy-MM-dd") ? @batch.Available.ToString("0.###") @batch.Unit</option>
+                            }
+                        </select></label>
+                        <label class="col-md-3">Quantity <input name="@(name).Quantity" value="0" inputmode="decimal" class="form-control" /></label>
+                        <label class="col-md-4">FEFO override reason <input name="@(name).FefoOverrideReason" maxlength="500" class="form-control" /></label>
+                    </div>
+                }
+            }
+        </div></section>
+    }
+    @if (usable)
+    {
+        <div class="d-flex flex-wrap gap-2 align-items-end">
+            <label>Confirm patient number <input name="PatientNumber" required maxlength="30" class="form-control" /></label>
+            <button class="btn btn-primary">Record dispensing</button>
+        </div>
+    }
+</form>
+<section class="mt-4"><h2 class="h5">Dispensing history</h2>
+    @if (Model.History.Count == 0) { <p>No dispensing recorded for this revision.</p> }
+    @foreach (var receipt in Model.History)
+    {
+        <div class="border-bottom py-2"><a asp-action="Receipt" asp-route-id="@receipt.Id">@receipt.Number</a> ? @(receipt.IsPartial ? "Partial" : "Complete")</div>
+    }
+</section>
+@section Scripts { <script src="~/js/pharmacy.js" asp-append-version="true"></script> }

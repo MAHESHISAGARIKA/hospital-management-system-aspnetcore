@@ -27,3 +27,8 @@ Emergency access, nurse assignments, cross-provider history, care expiry or hand
 ## Laboratory integration
 
 Authorized doctors request tests from an open encounter and view scoped order status and released reports from the encounter or patient timeline. LaboratoryStaff use a separate laboratory queue with minimal identifying information. See [Laboratory Management](laboratory-management.md).
+
+
+## Pharmacy integration
+
+Prescribers can record the unit for the total quantity independently of the dose unit. A signed prescription exposes a dispensing status to its authorized Doctor. Pharmacy records reference the immutable original item and revision. A void or signed successor stops further dispensing from the old revision. A successor with dispensing anywhere in its ancestry requires reconciliation. See [Pharmacy Management](pharmacy-management.md).

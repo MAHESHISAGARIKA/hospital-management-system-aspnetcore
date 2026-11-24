@@ -1,0 +1,18 @@
+@model PharmacyPage<PharmacyStockMovement>
+@{ ViewData["Title"] = "Stock movements"; }
+<h1 class="h3">Stock movements</h1>
+<partial name="_Links" /><partial name="_Messages" /><partial name="_ReportFilters" model="Model.Filter" /><partial name="_Print" />
+@if (Model.Rows.Count == 0) { <p>No movements match these filters.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Time (Asia/Colombo)</th><th>Medicine</th><th>Batch</th><th>Movement</th><th>Quantity</th><th>Reason</th></tr></thead><tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr><td>@AppointmentService.ToColombo(row.OccurredAtUtc).ToString("dd MMM yyyy HH:mm")</td>
+            <td><a asp-action="Reports" asp-route-medicineId="@row.Batch.MedicineId">@row.Batch.Medicine.GenericName</a></td>
+            <td><a asp-action="Reports" asp-route-batchId="@row.BatchId">@row.Batch.Number</a></td><td>@row.Kind</td><td>@row.Quantity.ToString("0.###") @row.Unit</td><td>@row.Reason</td></tr>
+    }
+    </tbody></table></div>
+    <partial name="_Paging" model="(Model.Filter.Page, Model.Total)" />
+}
+@section Scripts { <script src="~/js/pharmacy.js" asp-append-version="true"></script> }

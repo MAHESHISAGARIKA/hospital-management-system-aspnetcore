@@ -1,0 +1,2 @@
+@if (TempData["PharmacyMessage"] is string message) { <p class="alert alert-success" role="status">@message</p> }
+@if (TempData["PharmacyError"] is string error) { <p class="alert alert-danger" role="alert">@error</p> }

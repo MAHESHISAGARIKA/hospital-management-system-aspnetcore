@@ -95,6 +95,10 @@ See [EMR design](emr-design.md) for workflow, role and testing details. The broa
 
 The additive AddLaboratoryManagement migration follows AddElectronicMedicalRecords. It creates five tables for catalog tests, orders, order items, samples and result versions. An order gets its patient and doctor through the existing encounter. Items snapshot catalog fields for historical reporting. Sample and prior revision references are constrained to the same item. Released reports are generated from verified result revisions. See [laboratory design](laboratory-management.md).
 
+### Implemented in Stage 9: Pharmacy Management
+
+AddPharmacyManagement adds medicines, medicine batches, stock movements, dispense headers and dispense lines. A dispense header references a finalized EMR prescription revision. Each line references a prescribed item from that same revision and a stock batch. The migration adds a nullable quantity unit to the existing EMR item table. Stock amounts use numeric(18,3), with whole-count rules for tablets, capsules and each. The immutable ledger and restrictive foreign keys protect inventory history. See [Pharmacy Management](pharmacy-management.md) for adopted policies.
+
 ## Core conventions
 
 - PostgreSQL `uuid` values are used for primary and foreign keys.

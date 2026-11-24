@@ -16,7 +16,7 @@
         });
         for (const row of rows) {
             row.querySelector("[data-remove-medicine]").addEventListener("click", () => {
-                for (const field of row.querySelectorAll("input, textarea")) field.value = "";
+                for (const field of row.querySelectorAll("input, textarea, select")) field.value = "";
                 row.hidden = true;
                 updateAddButton();
                 add.focus();

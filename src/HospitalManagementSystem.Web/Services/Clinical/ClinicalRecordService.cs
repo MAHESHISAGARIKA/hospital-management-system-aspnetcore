@@ -95,7 +95,7 @@ public sealed class ClinicalRecordService(HospitalDbContext db, IAuditLogService
             {
                 Id = amend ? null : i.Id, Medicine = i.Medicine, Strength = i.Strength, Dose = i.Dose,
                 DoseUnit = i.DoseUnit, Route = i.Route, Frequency = i.Frequency, Duration = i.Duration,
-                Quantity = i.Quantity, Instructions = i.Instructions
+                Quantity = i.Quantity, DispenseUnit = i.DispenseUnit, Instructions = i.Instructions
             }).ToList() ?? []
         });
     }
@@ -275,7 +275,7 @@ public sealed class ClinicalRecordService(HospitalDbContext db, IAuditLogService
         var medicines = input.Medicines.Where(item => item.HasContent).ToList();
         var ids = medicines.Where(item => item.Id.HasValue).Select(item => item.Id).ToArray();
         if (medicines.Count is < 1 or > 20 || ids.Distinct().Count() != ids.Length ||
-            medicines.Any(item => !Validator.TryValidateObject(item, new ValidationContext(item), null, true) ||
+            medicines.Any(item => (item.DispenseUnit.HasValue && (!Enum.IsDefined(item.DispenseUnit.Value) || !item.Quantity.HasValue)) || !Validator.TryValidateObject(item, new ValidationContext(item), null, true) ||
                 new[] { item.Medicine, item.Dose, item.DoseUnit, item.Route, item.Frequency, item.Duration }.Any(string.IsNullOrWhiteSpace)))
             throw new ClinicalWorkflowException("Enter 1 to 20 complete medicines with name, dose, unit, route, frequency and duration.");
         return medicines;
@@ -309,6 +309,7 @@ public sealed class ClinicalRecordService(HospitalDbContext db, IAuditLogService
             item.Frequency = input.Frequency!.Trim();
             item.Duration = input.Duration!.Trim();
             item.Quantity = input.Quantity;
+            item.DispenseUnit = input.DispenseUnit;
             item.Instructions = Normalize(input.Instructions);
         }
     }

@@ -1,0 +1,24 @@
+@model StockReceiptInput
+@{
+    ViewData["Title"] = "Receive stock";
+    var medicines = (Medicine[])ViewData["Medicines"]!;
+}
+<h1 class="h3">Receive stock</h1>
+<partial name="_Links" /><partial name="_Messages" />
+@if (medicines.Length == 0) { <p>Register an active medicine before receiving stock.</p> }
+<form asp-action="Receive" method="post" data-pharmacy-form data-confirm="Record this stock receipt?" class="row g-3">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div><input asp-for="RequestKey" type="hidden" />
+    <label class="col-md-6">Medicine <select asp-for="MedicineId" class="form-select" required>
+        <option value="">Choose active medicine</option>
+        @foreach (var medicine in medicines)
+        { <option value="@medicine.Id">@medicine.Code ? @medicine.GenericName ? @medicine.Strength ? @medicine.Unit</option> }
+    </select></label>
+    <label class="col-md-3">Batch number <input asp-for="Number" maxlength="60" required class="form-control" /></label>
+    <label class="col-md-3">Quantity in stock unit <input asp-for="Quantity" inputmode="decimal" required class="form-control" /></label>
+    <label class="col-md-4">Received date <input asp-for="ReceivedDate" type="date" required class="form-control" /></label>
+    <label class="col-md-4">Expiry date <input asp-for="Expiry" type="date" required class="form-control" /></label>
+    <label class="col-md-4">Supplier <input asp-for="Supplier" maxlength="150" class="form-control" /></label>
+    <label class="col-12">Notes <textarea asp-for="Notes" maxlength="500" class="form-control"></textarea></label>
+    <div><button class="btn btn-primary" disabled="@(medicines.Length == 0)">Receive stock</button></div>
+</form>
+@section Scripts { <script src="~/js/pharmacy.js" asp-append-version="true"></script> }

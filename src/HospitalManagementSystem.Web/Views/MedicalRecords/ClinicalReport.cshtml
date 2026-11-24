@@ -150,6 +150,10 @@
                             <span> ? Signed @AppointmentService.ToColombo(finalized).ToString("dd MMM yyyy HH:mm") Asia/Colombo</span>
                         }
                     </p>
+                    @if (ViewData["DispensingStatuses"] is IReadOnlyDictionary<Guid, string> statuses && statuses.TryGetValue(record.Id, out var dispensing))
+                    {
+                        <p class="mb-2"><strong>Dispensing</strong> @dispensing</p>
+                    }
                     @if (record.PreviousRevisionId.HasValue)
                     {
                         <p class="mb-2"><strong>Correction reason</strong> @record.AmendmentReason</p>
@@ -170,7 +174,7 @@
                                 <li class="list-group-item px-0 text-break">
                                     <strong>@item.Medicine @item.Strength</strong>
                                     <span> ? @item.Dose @item.DoseUnit ? @item.Route ? @item.Frequency ? @item.Duration</span>
-                                    @if (item.Quantity.HasValue) { <span> ? Quantity @item.Quantity</span> }
+                                    @if (item.Quantity.HasValue) { <span> ? Quantity @item.Quantity @item.DispenseUnit</span> }
                                     @if (item.Instructions is not null) { <p class="mb-0">@item.Instructions</p> }
                                 </li>
                             }

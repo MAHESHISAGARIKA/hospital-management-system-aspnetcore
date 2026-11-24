@@ -87,6 +87,13 @@ builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ClinicalRecordService>();
+builder.Services.AddScoped<HospitalManagementSystem.Web.Services.Pharmacy.PharmacyService>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddOptions<HospitalManagementSystem.Web.Services.Pharmacy.PharmacyOptions>()
+    .BindConfiguration("Pharmacy")
+    .Validate(options => options.WarningDays is { Length: > 0 } && options.WarningDays.All(days => days is > 0 and <= 365),
+        "Pharmacy warning periods must be from 1 to 365 days.")
+    .ValidateOnStart();
 builder.Services.AddScoped<HospitalManagementSystem.Web.Services.Laboratory.LaboratoryService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IPatientNumberGenerator, PatientNumberGenerator>();

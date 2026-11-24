@@ -3,6 +3,7 @@ using HospitalManagementSystem.Web.Models;
 using HospitalManagementSystem.Web.Models.ViewModels;
 using HospitalManagementSystem.Web.Services.Clinical;
 using HospitalManagementSystem.Web.Services.Laboratory;
+using HospitalManagementSystem.Web.Services.Pharmacy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +12,7 @@ namespace HospitalManagementSystem.Web.Controllers;
 [Authorize(Roles = HospitalRoles.Doctor)]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [AutoValidateAntiforgeryToken]
-public sealed class MedicalRecordsController(ClinicalRecordService clinical, LaboratoryService laboratory) : Controller
+public sealed class MedicalRecordsController(ClinicalRecordService clinical, LaboratoryService laboratory, PharmacyService pharmacy) : Controller
 {
     [HttpGet]
     public Task<IActionResult> Index(CancellationToken ct)
@@ -35,7 +36,7 @@ public sealed class MedicalRecordsController(ClinicalRecordService clinical, Lab
 
     [HttpGet]
     public Task<IActionResult> Prescription(Guid id, Guid recordId, bool print, CancellationToken ct)
-        => ExecuteAsync(async () => View("ClinicalReport", await clinical.EncounterAsync(User, id, print, recordId, ct)), id);
+        => ExecuteAsync(async () => await WithLaboratoryAsync(await clinical.EncounterAsync(User, id, print, recordId, ct), ct), id);
 
     [HttpGet]
     public Task<IActionResult> Patient(Guid id, DateOnly? from, DateOnly? to, Guid? encounterId, CancellationToken ct)
@@ -90,8 +91,15 @@ public sealed class MedicalRecordsController(ClinicalRecordService clinical, Lab
 
     private async Task<IActionResult> WithLaboratoryAsync(ClinicalReport report, CancellationToken ct)
     {
-        ViewData["LaboratoryOrders"] = await laboratory.EncounterOrdersAsync(User,
-            report.Encounters.Select(encounter => encounter.Id).ToArray(), ct);
+        if (!report.Printable && !report.RecordId.HasValue)
+            ViewData["LaboratoryOrders"] = await laboratory.EncounterOrdersAsync(User,
+                report.Encounters.Select(encounter => encounter.Id).ToArray(), ct);
+
+        var prescriptions = report.Encounters.SelectMany(encounter => encounter.Records)
+            .Where(record => record.Kind == ClinicalRecordKind.Prescription &&
+                (!report.RecordId.HasValue || report.RecordId == record.Id)).Select(record => record.Id).ToArray();
+        if (prescriptions.Length > 0)
+            ViewData["DispensingStatuses"] = await pharmacy.DoctorStatusesAsync(User, prescriptions, ct);
         return View("ClinicalReport", report);
     }
 

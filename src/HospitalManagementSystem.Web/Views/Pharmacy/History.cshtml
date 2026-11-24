@@ -1,0 +1,26 @@
+@model PharmacyPage<PrescriptionDispense>
+@{ ViewData["Title"] = "Dispensing history"; }
+<h1 class="h3">Dispensing history</h1>
+<partial name="_Links" /><partial name="_Messages" />
+<form method="get" asp-action="History" class="row g-2 mb-3 d-print-none">
+    <label class="col-md-3">Receipt number <input name="Search" value="@Model.Filter.Search" class="form-control" /></label>
+    <label class="col-md-2">From <input type="date" name="From" value="@(Model.Filter.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">To <input type="date" name="To" value="@(Model.Filter.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">Status <select name="DispensingStatus" class="form-select"><option value="">All</option>
+        <option selected="@(Model.Filter.DispensingStatus == "Partial")">Partial</option>
+        <option selected="@(Model.Filter.DispensingStatus == "Complete")">Complete</option></select></label>
+    <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+</form>
+<partial name="_Print" />
+@if (Model.Rows.Count == 0) { <p>No dispensing records match these filters.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Receipt</th><th>Prescription</th><th>Dispensed (Asia/Colombo)</th><th>Status</th></tr></thead><tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr><td><a asp-action="Receipt" asp-route-id="@row.Id">@row.Number</a></td>
+            <td>@row.PrescriptionId</td><td>@AppointmentService.ToColombo(row.OccurredAtUtc).ToString("dd MMM yyyy HH:mm")</td><td>@(row.IsPartial ? "Partial" : "Complete")</td></tr>
+    }
+    </tbody></table></div><partial name="_Paging" model="(Model.Filter.Page, Model.Total)" />
+}
+@section Scripts { <script src="~/js/pharmacy.js" asp-append-version="true"></script> }
