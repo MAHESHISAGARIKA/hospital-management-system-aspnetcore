@@ -1,0 +1,10 @@
+@model IReadOnlyList<WardCensus>
+@{ ViewData["Title"] = "Ward occupancy"; }
+<h1 class="h3">Ward occupancy</h1><partial name="_Navigation" />
+@if (User.IsInRole("Administrator")) { <a asp-action="Ward" class="btn btn-primary mb-3 d-print-none">Register ward</a> }
+<form asp-action="Wards" method="get" class="d-flex gap-2 mb-3 d-print-none">
+    <label>Ward code or name <input name="Search" class="form-control" maxlength="100" /></label>
+    <button class="btn btn-outline-primary align-self-end">Search</button>
+</form>
+<partial name="_Print" /><partial name="_Census" model="Model" />
+@section Scripts { <script src="~/js/stays.js" asp-append-version="true"></script> }

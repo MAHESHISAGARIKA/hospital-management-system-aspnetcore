@@ -1,0 +1,148 @@
+@model AdmissionPage
+@{
+    var stay = Model.Admission;
+    var active = stay.Status == AdmissionStatus.Admitted;
+    var canWork = active && (Model.Doctor || Model.Nurse) && !Model.Print;
+    string Local(DateTime time) => AppointmentService.ToColombo(time).ToString("dd MMM yyyy HH:mm");
+    ViewData["Title"] = Model.Print ? "Signed discharge summary" : "Admission details";
+}
+<h1 class="h3">@ViewData["Title"]</h1>
+@if (Model.Print) { <partial name="_Print" /> }
+else { <partial name="_Navigation" /> }
+<p class="text-break">@stay.Number <span class="badge text-bg-light border">@stay.Status</span></p>
+<p>@stay.Patient.PatientNumber ? @stay.Patient.FirstName @stay.Patient.LastName ? Dr. @stay.Doctor.FirstName @stay.Doctor.LastName</p>
+<p>Registered @Local(stay.CreatedAtUtc) Asia/Colombo
+@if (stay.AdmittedAtUtc is DateTime admitted) { <span> ? Admitted @Local(admitted)</span> }
+</p>
+@if (Model.Doctor && !Model.Print && !string.IsNullOrWhiteSpace(stay.Reason))
+{ <p class="text-break">Admission reason ? @stay.Reason</p> }
+@if (Model.Doctor && stay.OriginEncounterId.HasValue)
+{
+    <section class="card mb-3"><div class="card-body"><h2 class="h5">Linked outpatient clinical records</h2>
+        <a asp-controller="MedicalRecords" asp-action="Encounter" asp-route-id="@stay.OriginEncounterId">Diagnoses, treatments and clinical timeline</a>
+        @foreach (var prescription in Model.Prescriptions)
+        {
+            <div>Finalized prescription ? <a asp-controller="MedicalRecords" asp-action="Prescription"
+                asp-route-id="@stay.OriginEncounterId" asp-route-recordId="@prescription.Id">@prescription.Label</a></div>
+        }
+        @foreach (var report in Model.LabReports)
+        {
+            <div>Released lab report ? <a asp-controller="Laboratory" asp-action="Report" asp-route-id="@report.Id">@report.Label</a></div>
+        }
+    </div></section>
+}
+@if (Model.Doctor && stay.Discharge is { } discharge)
+{
+    <section class="card mb-3"><div class="card-body">
+        <h2 class="h5">Signed discharge</h2>
+        <p>@discharge.Disposition ? @Local(discharge.SignedAtUtc) Asia/Colombo</p>
+        <p><strong>Discharge diagnosis</strong></p><p class="text-break" style="white-space:pre-wrap">@discharge.Diagnosis</p>
+        <p><strong>Treatment and discharge summary</strong></p><p class="text-break" style="white-space:pre-wrap">@discharge.Summary</p>
+        @if (!Model.Print) { <a asp-action="Summary" asp-route-id="@stay.Id" class="btn btn-outline-primary">Print discharge summary</a> }
+    </div></section>
+}
+<section class="mb-3"><h2 class="h5">Bed allocation and transfer history</h2>
+@if (stay.Allocations.Count == 0) { <p>No bed has been allocated.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Ward</th><th>Bed</th><th>Start (Asia/Colombo)</th><th>End</th>
+    @if (Model.Doctor && !Model.Print) { <th>Transfer reason</th> }</tr></thead><tbody>
+    @foreach (var slot in stay.Allocations.OrderBy(slot => slot.StartedAtUtc))
+    {
+        <tr><td>@slot.Bed.Ward.Code</td><td>@slot.Bed.Label</td><td>@Local(slot.StartedAtUtc)</td><td>@(slot.EndedAtUtc is DateTime end ? Local(end) : "Current")</td>
+        @if (Model.Doctor && !Model.Print) { <td>@slot.TransferReason</td> }</tr>
+    }
+    </tbody></table></div>
+}
+</section>
+@if (!Model.Print && (stay.Status == AdmissionStatus.Pending || stay.Status == AdmissionStatus.Approved))
+{
+    @if (Model.Doctor && stay.Status == AdmissionStatus.Pending)
+    {
+        <form asp-action="Approve" asp-route-id="@stay.Id" method="post" class="mb-3" data-stay-form data-confirm="Approve this admission?">
+            <input type="hidden" name="Token" value="@stay.Token" /><button class="btn btn-primary">Approve admission</button>
+        </form>
+    }
+    @if (Model.Reception || Model.Doctor)
+    {
+        <form asp-action="Cancel" asp-route-id="@stay.Id" method="post" class="d-flex flex-wrap gap-2 align-items-end mb-3" data-stay-form data-confirm="Cancel this admission before allocation?">
+            <input type="hidden" name="Token" value="@stay.Token" />
+            <label>Cancellation reason <input name="Reason" required maxlength="500" class="form-control" /></label>
+            <button class="btn btn-outline-danger">Cancel admission</button>
+        </form>
+    }
+}
+@if (Model.Reception && !Model.Print && (active || stay.Status == AdmissionStatus.Approved))
+{
+    var action = active ? "Transfer" : "Allocate";
+    <section class="card mb-3"><div class="card-body"><h2 class="h5">@(active ? "Transfer to a new bed" : "Admit and allocate a bed")</h2>
+    @if (Model.Available.Count == 0) { <p>No beds are ready for allocation.</p> }
+    else
+    {
+        <form asp-action="@action" asp-route-id="@stay.Id" method="post" class="row g-2" data-stay-form data-confirm="Confirm the bed and patient before continuing.">
+            <input type="hidden" name="Token" value="@stay.Token" />
+            <label class="col-md-5">Ward and available bed <select name="BedId" required class="form-select">
+                <option value="">Select a bed</option>
+                @foreach (var bed in Model.Available) { <option value="@bed.Id">@bed.Ward.Code / @bed.Label</option> }
+            </select></label>
+            @if (active) { <label class="col-md-5">Transfer reason <input name="Reason" required maxlength="500" class="form-control" /></label> }
+            <div class="col-md-2 align-self-end"><button class="btn btn-primary">@action</button></div>
+        </form>
+    }
+    </div></section>
+}
+@if (!Model.Print && Model.Doctor && active)
+{
+    <section class="card mb-3"><div class="card-body"><h2 class="h5">Nursing care assignments</h2>
+        <form asp-action="Assign" asp-route-id="@stay.Id" method="post" class="d-flex gap-2 flex-wrap align-items-end mb-3" data-stay-form>
+            <input type="hidden" name="Token" value="@stay.Token" />
+            <label>Nurse <select name="NurseUserId" required class="form-select"><option value="">Select an enabled Nurse</option>
+            @foreach (var nurse in Model.Nurses.Where(nurse => stay.Assignments.All(a => a.NurseUserId != nurse.Id || a.EndedAtUtc.HasValue)))
+            { <option value="@nurse.Id">@nurse.UserName</option> }
+            </select></label>
+            <button class="btn btn-outline-primary">Assign care</button>
+        </form>
+        @foreach (var assignment in stay.Assignments.OrderByDescending(a => a.AssignedAtUtc))
+        {
+            <p>@(Model.Nurses.SingleOrDefault(nurse => nurse.Id == assignment.NurseUserId)?.UserName ?? assignment.NurseUserId.ToString()) ? @Local(assignment.AssignedAtUtc) ? @(assignment.EndedAtUtc.HasValue ? "Ended" : "Active")</p>
+            @if (!assignment.EndedAtUtc.HasValue)
+            {
+                <form asp-action="EndAssignment" asp-route-id="@stay.Id" method="post" class="mb-3" data-stay-form>
+                    <input type="hidden" name="Token" value="@stay.Token" /><input type="hidden" name="AssignmentId" value="@assignment.Id" />
+                    <button class="btn btn-sm btn-outline-secondary">End assignment</button>
+                </form>
+            }
+        }
+    </div></section>
+}
+@if (!Model.Print && (Model.Doctor || Model.Nurse))
+{
+    <section class="card mb-3"><div class="card-body"><h2 class="h5">Observations</h2>
+        @if (canWork) { <partial name="_Observation" model="(stay.Id, stay.Token, (InpatientObservation?)null)" /> }
+        @if (stay.Observations.Count == 0) { <p>No observations recorded.</p> }
+        @foreach (var value in stay.Observations.OrderByDescending(o => o.RecordedAtUtc))
+        {
+            var superseded = stay.Observations.Any(o => o.CorrectsId == value.Id);
+            <div class="border-top py-2">
+                <strong>@value.Kind ? @value.Value.ToString("0.##")</strong> ? @Local(value.RecordedAtUtc) @(superseded ? "? Historical" : "")
+                @if (value.CorrectionReason is not null) { <p>@value.CorrectionReason</p> }
+                @if (canWork && !superseded && (Model.Doctor || value.RecordedByUserId.ToString() == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value))
+                { <details><summary>Correct observation</summary><partial name="_Observation" model="(stay.Id, stay.Token, (InpatientObservation?)value)" /></details> }
+            </div>
+        }
+    </div></section>
+}
+@if (Model.Doctor && active && !Model.Print)
+{
+    <section class="card mb-3"><div class="card-body"><h2 class="h5">Clinical discharge</h2>
+        <form asp-action="Discharge" asp-route-id="@stay.Id" method="post" data-stay-form data-confirm="Sign this discharge and place the bed on cleaning hold?" class="row g-2">
+            <input type="hidden" name="Token" value="@stay.Token" />
+            <label class="col-md-4">Disposition <select name="Disposition" required class="form-select"><option value="">Select disposition</option>
+            @foreach (var status in Enum.GetValues<DischargeDisposition>()) { <option>@status</option> }</select></label>
+            <label class="col-12">Approved discharge diagnosis <textarea name="Diagnosis" required maxlength="500" class="form-control"></textarea></label>
+            <label class="col-12">Treatment and discharge summary <textarea name="Summary" required maxlength="4000" class="form-control" rows="4"></textarea></label>
+            <div><button class="btn btn-primary">Sign discharge</button></div>
+        </form>
+    </div></section>
+}
+@section Scripts { <script src="~/js/stays.js" asp-append-version="true"></script> }

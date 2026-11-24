@@ -1,0 +1,13 @@
+@model IReadOnlyList<WardCensus>
+@if (Model.Count == 0) { <p>No wards have been registered.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Ward</th><th>Active beds</th><th>Occupied</th><th>Ready</th><th>Unavailable</th><th>Occupancy rate</th></tr></thead><tbody>
+    @foreach (var ward in Model)
+    {
+        <tr><td><a asp-action="Ward" asp-route-id="@ward.Id">@ward.Code ? @ward.Name</a> @(ward.Active ? "" : "(Inactive)")</td>
+        <td>@ward.Capacity</td><td>@ward.Occupied</td><td>@ward.Available</td><td>@(ward.Capacity - ward.Occupied - ward.Available)</td>
+        <td>@(ward.Capacity == 0 ? "?" : ((decimal)ward.Occupied / ward.Capacity).ToString("P0"))</td></tr>
+    }
+    </tbody></table></div>
+}

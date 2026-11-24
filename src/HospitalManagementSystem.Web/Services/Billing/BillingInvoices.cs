@@ -20,7 +20,7 @@ public sealed partial class BillingService
             {
                 PatientId = invoice.PatientId, ReplacesId = invoice.ReplacesId, Token = invoice.Token, ServiceDate = invoice.ServiceDate,
                 Lines = invoice.Items.Select(item => new InvoiceLineInput { ServiceId = item.Price.ServiceId,
-                    Quantity = item.Quantity, SourceId = item.AppointmentId ?? item.LabItemId ?? item.DispenseItemId }).ToList()
+                    Quantity = item.Quantity, SourceId = item.AppointmentId ?? item.LabItemId ?? item.DispenseItemId ?? item.AdmissionId }).ToList()
             };
         }
         else
@@ -38,7 +38,7 @@ public sealed partial class BillingService
         var patients = await db.Patients.AsNoTracking().Where(p => p.IsActive)
             .OrderBy(p => p.LastName).ThenBy(p => p.FirstName)
             .Select(p => new BillingPatient(p.Id, p.PatientNumber, p.FirstName + " " + p.LastName)).ToArrayAsync(ct);
-        var choices = await db.BillableServices.AsNoTracking().Where(s => s.Active && s.Category != BillingCategory.Admission)
+        var choices = await db.BillableServices.AsNoTracking().Where(s => s.Active)
             .OrderBy(s => s.Code).ToArrayAsync(ct);
         var sources = input.PatientId != Guid.Empty ? await SourcesAsync(input.PatientId, ct) : [];
         return new(id, input, patients, choices, sources);
@@ -102,6 +102,7 @@ public sealed partial class BillingService
                 Id = Guid.CreateVersion7(), InvoiceId = invoice.Id, PriceId = price.Id,
                 Category = service.Category, Code = service.Code, Name = service.Name, Quantity = entry.Quantity,
                 UnitPrice = price.Amount, Total = total,
+                AdmissionId = service.Category == BillingCategory.Admission ? entry.SourceId : null,
                 AppointmentId = service.Category == BillingCategory.Consultation ? entry.SourceId : null,
                 LabItemId = service.Category == BillingCategory.Laboratory ? entry.SourceId : null,
                 DispenseItemId = service.Category == BillingCategory.Pharmacy ? entry.SourceId : null
@@ -146,18 +147,18 @@ public sealed partial class BillingService
         var sources = await SourcesAsync(invoice.PatientId, ct);
         foreach (var line in invoice.Items)
         {
-            var sourceId = line.AppointmentId ?? line.LabItemId ?? line.DispenseItemId;
+            var sourceId = line.AppointmentId ?? line.LabItemId ?? line.DispenseItemId ?? line.AdmissionId;
             var source = sources.SingleOrDefault(s => s.Id == sourceId && s.Category == line.Category);
             if (!services.TryGetValue(line.Price.ServiceId, out var service) || service.Category != line.Category ||
                 line.Price.From > invoice.ServiceDate || line.Price.Until <= invoice.ServiceDate)
                 throw new BillingException("A draft price or service is no longer eligible. Review the draft.");
             ValidateSource(service, source, sourceId, line.Quantity, invoice.ServiceDate);
             if (sourceId.HasValue && await db.PatientInvoiceItems.AnyAsync(other => other.Claimed &&
-                (other.AppointmentId == sourceId || other.LabItemId == sourceId || other.DispenseItemId == sourceId), ct))
+                (other.AppointmentId == sourceId || other.LabItemId == sourceId || other.DispenseItemId == sourceId || other.AdmissionId == sourceId), ct))
                 throw new BillingException("A clinical source is already on an issued invoice.");
         }
         foreach (var line in invoice.Items)
-            line.Claimed = line.AppointmentId.HasValue || line.LabItemId.HasValue || line.DispenseItemId.HasValue;
+            line.Claimed = line.AppointmentId.HasValue || line.LabItemId.HasValue || line.DispenseItemId.HasValue || line.AdmissionId.HasValue;
         invoice.Total = invoice.Items.Sum(item => item.Total);
         invoice.Number = $"INV-{invoice.Id:N}";
         invoice.Status = InvoiceStatus.Issued;
@@ -211,10 +212,15 @@ public sealed partial class BillingService
             .SelectMany(d => d.Lines.Select(line => new { d.Number, line.Id, line.Quantity, line.Batch.Medicine.Code, d.OccurredAtUtc }))
             .Where(i => !db.PatientInvoiceItems.Any(line => line.Claimed && line.DispenseItemId == i.Id))
             .ToArrayAsync(ct);
+        var stays = await db.InpatientAdmissions.AsNoTracking()
+            .Where(a => a.PatientId == patientId && a.Status == AdmissionStatus.Discharged && a.Discharge != null &&
+                !db.PatientInvoiceItems.Any(line => line.Claimed && line.AdmissionId == a.Id))
+            .Select(a => new { a.Id, a.Number, a.Discharge!.SignedAtUtc }).ToArrayAsync(ct);
         return [
             .. appointments.Select(a => new BillingSource(a.Id, BillingCategory.Consultation, a.AppointmentNumber, null, 1, LocalDate(a.StartAtUtc))),
             .. labs.Select(i => new BillingSource(i.Id, BillingCategory.Laboratory, i.Number, i.Code, 1, LocalDate(i.CreatedAtUtc))),
-            .. dispensing.Select(i => new BillingSource(i.Id, BillingCategory.Pharmacy, i.Number, i.Code, i.Quantity, LocalDate(i.OccurredAtUtc)))
+            .. dispensing.Select(i => new BillingSource(i.Id, BillingCategory.Pharmacy, i.Number, i.Code, i.Quantity, LocalDate(i.OccurredAtUtc))),
+            .. stays.Select(a => new BillingSource(a.Id, BillingCategory.Admission, a.Number, null, 1, LocalDate(a.SignedAtUtc)))
         ];
     }
 
@@ -224,8 +230,7 @@ public sealed partial class BillingService
     {
         if (service.Category == BillingCategory.Other && !id.HasValue)
             return;
-        if (source is null || source.Quantity != quantity || source.Code != service.SourceCode || source.ServiceDate != date ||
-            service.Category == BillingCategory.Admission)
+        if (source is null || source.Quantity != quantity || source.Code != service.SourceCode || source.ServiceDate != date)
             throw new BillingException("Choose an eligible unbilled source for this patient, service, date and actual quantity.");
     }
 

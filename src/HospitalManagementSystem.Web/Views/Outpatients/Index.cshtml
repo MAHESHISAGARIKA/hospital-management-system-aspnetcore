@@ -1,0 +1,43 @@
+@model AppointmentSearchViewModel
+@{ ViewData["Title"] = "Outpatient visits"; var pages = Math.Max(1, (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize)); }
+<h1 class="h3">Outpatient visits</h1>
+<nav aria-label="Outpatient worklists" class="d-flex gap-2 flex-wrap mb-3 d-print-none">
+    <a asp-action="Today" class="btn btn-sm btn-outline-primary">Today</a>
+    <a asp-action="Visits" class="btn btn-sm btn-outline-primary">Visit history</a>
+    <a asp-controller="Appointments" asp-action="Index" class="btn btn-sm btn-outline-primary">Appointments</a>
+</nav>
+<form asp-action="Visits" method="get" class="row g-2 mb-3 d-print-none">
+    <label class="col-md-3">Appointment or patient <input name="Search" value="@Model.Search" class="form-control" maxlength="100" /></label>
+    <label class="col-md-2">Date (Asia/Colombo) <input name="Date" type="date" value="@(Model.Date?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">Doctor <select name="DoctorId" class="form-select"><option value="">All permitted</option>
+    @foreach (var doctor in Model.Doctors) { <option value="@doctor.Id" selected="@(Model.DoctorId == doctor.Id)">@doctor.DisplayName</option> }</select></label>
+    <label class="col-md-2">Department <select name="DepartmentId" class="form-select"><option value="">All</option>
+    @foreach (var department in Model.Departments) { <option value="@department.Id" selected="@(Model.DepartmentId == department.Id)">@department.Name</option> }</select></label>
+    <label class="col-md-2">Visit status <select name="Status" class="form-select"><option value="">All</option>
+    @foreach (var status in Enum.GetValues<AppointmentStatus>()) { <option value="@status" selected="@(Model.Status == status)">@status</option> }</select></label>
+    <div class="col-md-1 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+</form>
+<partial name="~/Views/Inpatients/_Print.cshtml" />
+@if (Model.Appointments.Count == 0) { <p>No visits match these filters.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Appointment</th><th>Patient</th><th>Doctor</th><th>Department</th><th>Time</th><th>Status</th></tr></thead><tbody>
+    @foreach (var visit in Model.Appointments)
+    {
+        <tr><td><a asp-action="Visit" asp-route-id="@visit.Id">@visit.AppointmentNumber</a></td><td>@visit.PatientDisplayName</td>
+        <td>@visit.DoctorDisplayName</td><td>@visit.DepartmentName</td><td>@visit.StartAtLocal.ToString("dd MMM yyyy HH:mm")</td><td>@visit.Status</td></tr>
+    }
+    </tbody></table></div>
+    <nav aria-label="Visit pagination" class="d-flex align-items-center gap-2 d-print-none">
+    @foreach (var link in new[] { ("Previous", Model.Page - 1), ("Next", Model.Page + 1) })
+    {
+        if (link.Item2 >= 1 && link.Item2 <= pages)
+        {
+            <a asp-action="Visits" asp-route-page="@link.Item2" asp-route-date="@(Model.Date?.ToString("yyyy-MM-dd"))"
+                asp-route-search="@Model.Search" asp-route-doctorId="@Model.DoctorId" asp-route-departmentId="@Model.DepartmentId"
+                asp-route-status="@Model.Status" class="btn btn-sm btn-outline-secondary">@link.Item1</a>
+        }
+    }
+    <span>Page @Model.Page of @pages ? @Model.TotalCount visits</span></nav>
+}
+@section Scripts { <script src="~/js/stays.js" asp-append-version="true"></script> }

@@ -42,6 +42,14 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
     public DbSet<PatientPayment> PatientPayments => Set<PatientPayment>();
     public DbSet<PaymentReversal> PaymentReversals => Set<PaymentReversal>();
 
+    public DbSet<HospitalWard> HospitalWards => Set<HospitalWard>();
+    public DbSet<HospitalBed> HospitalBeds => Set<HospitalBed>();
+    public DbSet<InpatientAdmission> InpatientAdmissions => Set<InpatientAdmission>();
+    public DbSet<BedAllocation> BedAllocations => Set<BedAllocation>();
+    public DbSet<InpatientCareAssignment> InpatientCareAssignments => Set<InpatientCareAssignment>();
+    public DbSet<InpatientObservation> InpatientObservations => Set<InpatientObservation>();
+    public DbSet<InpatientDischarge> InpatientDischarges => Set<InpatientDischarge>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -49,6 +57,7 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
         LaboratoryModelConfiguration.Configure(modelBuilder);
         PharmacyModelConfiguration.Configure(modelBuilder);
         BillingModelConfiguration.Configure(modelBuilder);
+        InpatientModelConfiguration.Configure(modelBuilder);
 
         modelBuilder.Entity<ApplicationUser>(entity =>
         {

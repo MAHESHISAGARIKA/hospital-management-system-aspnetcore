@@ -1,0 +1,24 @@
+@{
+    var ward = ViewData["Ward"] as HospitalWard;
+    ViewData["Title"] = "Ward details";
+}
+<h1 class="h3">Ward details</h1><partial name="_Navigation" />
+@if (User.IsInRole("Administrator"))
+{
+    var departments = (Department[])ViewData["Departments"]!;
+    <form asp-action="SaveWard" asp-route-id="@ward?.Id" method="post" class="row g-3" data-stay-form>
+        <input type="hidden" name="Token" value="@(ward?.Token ?? Guid.Empty)" />
+        <label class="col-md-3">Ward code <input name="Code" value="@ward?.Code" maxlength="30" required class="form-control" /></label>
+        <label class="col-md-5">Ward name <input name="Name" value="@ward?.Name" maxlength="120" required class="form-control" /></label>
+        <label class="col-md-4">Location <input name="Location" value="@ward?.Location" maxlength="120" class="form-control" /></label>
+        <label class="col-md-4">Department <select name="DepartmentId" class="form-select"><option value="">Unassigned</option>
+        @foreach (var department in departments) { <option value="@department.Id" selected="@(ward?.DepartmentId == department.Id)">@department.Name</option> }
+        </select></label>
+        <label class="col-md-3">State <select name="Active" class="form-select"><option value="true" selected="@(ward?.Active != false)">Active</option>
+            <option value="false" selected="@(ward?.Active == false)">Inactive</option></select></label>
+        <div><button class="btn btn-primary">Save ward</button></div>
+    </form>
+}
+else if (ward is not null) { <p>@ward.Code ? @ward.Name ? @ward.Location</p> }
+@if (ward is not null) { <p class="mt-3"><a asp-action="Beds" asp-route-wardId="@ward.Id">View ward beds</a></p> }
+@section Scripts { <script src="~/js/stays.js" asp-append-version="true"></script> }

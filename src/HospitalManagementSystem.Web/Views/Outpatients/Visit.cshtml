@@ -1,0 +1,27 @@
+@model (Appointment Appointment, Guid? EncounterId, bool Clinical)
+@{ var visit = Model.Appointment; ViewData["Title"] = "Outpatient visit summary"; }
+<h1 class="h3">Outpatient visit summary</h1>
+<div class="d-flex gap-2 flex-wrap mb-3 d-print-none">
+    <a asp-action="Today" class="btn btn-outline-primary">Today?s visits</a>
+    <a asp-action="Visits" asp-route-search="@visit.Patient.PatientNumber" class="btn btn-outline-secondary">Patient visit history</a>
+    <a asp-controller="Appointments" asp-action="Details" asp-route-id="@visit.Id" class="btn btn-outline-secondary">Appointment and check-in status</a>
+</div>
+<partial name="~/Views/Inpatients/_Print.cshtml" />
+<p>@visit.AppointmentNumber ? @visit.Status</p>
+<p>@visit.Patient.PatientNumber ? @visit.Patient.FirstName @visit.Patient.LastName</p>
+<p>Dr. @visit.Doctor.FirstName @visit.Doctor.LastName ? @visit.Department.Name</p>
+<p>@AppointmentService.ToColombo(visit.StartAtUtc).ToString("dd MMM yyyy HH:mm") Asia/Colombo</p>
+@if (Model.Clinical && Model.EncounterId is Guid encounter)
+{
+    <a asp-controller="MedicalRecords" asp-action="Encounter" asp-route-id="@encounter" class="btn btn-primary d-print-none">Clinical encounter</a>
+    <a asp-controller="Inpatients" asp-action="Create" asp-route-encounterId="@encounter" class="btn btn-outline-primary d-print-none">Register linked admission</a>
+}
+else if (Model.Clinical && visit.Status == AppointmentStatus.CheckedIn)
+{
+    <form asp-controller="MedicalRecords" asp-action="Open" method="post" data-stay-form class="d-print-none">
+        <input type="hidden" name="appointmentId" value="@visit.Id" /><button class="btn btn-primary">Open encounter</button>
+    </form>
+}
+@if (User.IsInRole("Accountant") && visit.Status == AppointmentStatus.Completed)
+{ <a asp-controller="Billing" asp-action="Edit" asp-route-patientId="@visit.PatientId" class="btn btn-outline-secondary d-print-none">Create a bill</a> }
+@section Scripts { <script src="~/js/stays.js" asp-append-version="true"></script> }

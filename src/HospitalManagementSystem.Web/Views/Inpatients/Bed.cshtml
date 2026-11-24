@@ -1,0 +1,29 @@
+@{ var bed = ViewData["Bed"] as HospitalBed; var wards = (IReadOnlyList<WardCensus>)ViewData["Wards"]!; ViewData["Title"] = "Bed details"; }
+<h1 class="h3">Bed details</h1><partial name="_Navigation" />
+@if (User.IsInRole("Administrator") && !(bed?.Allocations.Any(a => a.EndedAtUtc == null) ?? false))
+{
+    <form asp-action="SaveBed" asp-route-id="@bed?.Id" method="post" class="row g-3" data-stay-form>
+        <input type="hidden" name="Token" value="@(bed?.Token ?? Guid.Empty)" />
+        <label class="col-md-3">Ward <select name="WardId" required class="form-select"><option value="">Select ward</option>
+        @foreach (var ward in wards) { <option value="@ward.Id" selected="@(bed?.WardId == ward.Id)">@ward.Code</option> }
+        </select></label>
+        <label class="col-md-3">Bed label <input name="Label" value="@bed?.Label" maxlength="40" required class="form-control" /></label>
+        <label class="col-md-3">Condition <select name="Condition" class="form-select">
+        @foreach (var condition in Enum.GetValues<BedCondition>()) { <option value="@condition" selected="@(bed?.Condition == condition)">@condition</option> }
+        </select></label>
+        <label class="col-md-3">State <select name="Active" class="form-select"><option value="true" selected="@(bed?.Active != false)">Active</option>
+        <option value="false" selected="@(bed?.Active == false)">Inactive</option></select></label>
+        <div><button class="btn btn-primary">Save bed</button></div>
+    </form>
+}
+@if (bed is not null)
+{
+    <section class="mt-4"><h2 class="h5">@bed.Ward.Code ? @bed.Label ? Allocation history</h2>
+    @if (bed.Allocations.Count == 0) { <p>No allocations recorded.</p> }
+    @foreach (var item in bed.Allocations.OrderByDescending(a => a.StartedAtUtc))
+    {
+        <p>@AppointmentService.ToColombo(item.StartedAtUtc).ToString("dd MMM yyyy HH:mm") ?
+        @(item.EndedAtUtc is DateTime end ? AppointmentService.ToColombo(end).ToString("dd MMM yyyy HH:mm") : "Occupied") Asia/Colombo</p>
+    }</section>
+}
+@section Scripts { <script src="~/js/stays.js" asp-append-version="true"></script> }

@@ -78,6 +78,12 @@
                             {
                                 <li class="nav-item"><a class="nav-link text-dark" asp-controller="Billing" asp-action="Index">Billing</a></li>
                             }
+                            @if (User.IsInRole("Doctor") || User.IsInRole("Receptionist"))
+                            { <li class="nav-item"><a class="nav-link text-dark" asp-controller="Outpatients" asp-action="Today">OPD</a></li> }
+                            @if (User.IsInRole("Doctor") || User.IsInRole("Receptionist") || User.IsInRole("Nurse"))
+                            { <li class="nav-item"><a class="nav-link text-dark" asp-controller="Inpatients" asp-action="Index">Inpatients</a></li> }
+                            @if (User.IsInRole("Administrator"))
+                            { <li class="nav-item"><a class="nav-link text-dark" asp-controller="Inpatients" asp-action="Wards">Wards and beds</a></li> }
                         }
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
