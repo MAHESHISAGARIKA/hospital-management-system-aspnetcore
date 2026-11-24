@@ -1,0 +1,21 @@
+@model LaboratoryTest
+<form asp-action="SaveTest" asp-route-id="@(Model.Id == Guid.Empty ? null : Model.Id)" method="post" class="card-body" data-lab-form>
+    <input type="hidden" name="Token" value="@Model.ConcurrencyToken" />
+    <div class="row g-2">
+        <label class="col-md-2">Test code <input class="form-control" name="Code" value="@Model.Code" maxlength="30" required /></label>
+        <label class="col-md-4">Test name <input class="form-control" name="Name" value="@Model.Name" maxlength="150" required /></label>
+        <label class="col-md-3">Expected specimen <input class="form-control" name="Specimen" value="@Model.Specimen" maxlength="80" required /></label>
+        <label class="col-md-3">Reporting unit <input class="form-control" name="Unit" value="@Model.Unit" maxlength="40" /></label>
+        <label class="col-md-3">Result type <select class="form-select" name="Kind">
+            @foreach (var kind in Enum.GetValues<LabResultKind>())
+            {
+                <option value="@kind" selected="@(Model.Kind == kind)">@kind</option>
+            }
+        </select></label>
+        <label class="col-md-3">Availability <select class="form-select" name="Active">
+            <option value="true" selected="@Model.Active">Active</option>
+            <option value="false" selected="@(!Model.Active)">Inactive</option>
+        </select></label>
+    </div>
+    <button class="btn btn-primary mt-3">Save test</button>
+</form>

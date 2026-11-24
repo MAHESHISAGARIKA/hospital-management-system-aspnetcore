@@ -22,3 +22,8 @@ Clinical dates use Asia/Colombo calendar dates. Created, updated, signed and rep
 Apply `AddElectronicMedicalRecords` manually to an explicitly selected database. It follows `AddAppointmentBookingFingerprint` and adds three clinical tables, unique indexes, restricted foreign keys and PostgreSQL guards for visit matching, immutable signed entries and deletion prevention. Treat downgrading this migration as a clinical data removal operation. The [README](../README.md) contains the commands and a browser checklist. The default InMemory suite covers the service and MVC workflows. Native PostgreSQL trigger and migration runtime verification requires an explicitly configured disposable database.
 
 Emergency access, nurse assignments, cross-provider history, care expiry or handoff rules, appointmentless encounter eligibility, controlled medicine and prescription validity rules, and prescription dispensing require clinical policy approval or later modules. Stage 7 does not generate diagnoses or recommend medicines.
+
+
+## Laboratory integration
+
+Authorized doctors request tests from an open encounter and view scoped order status and released reports from the encounter or patient timeline. LaboratoryStaff use a separate laboratory queue with minimal identifying information. See [Laboratory Management](laboratory-management.md).

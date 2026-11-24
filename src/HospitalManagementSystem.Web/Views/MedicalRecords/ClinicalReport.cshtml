@@ -104,6 +104,32 @@
                     }
                 </div>
             }
+            @if (ViewData["LaboratoryOrders"] is LaboratoryOrder[] orders)
+            {
+                var visitOrders = orders.Where(order => order.EncounterId == encounter.Id).ToArray();
+                <div class="border rounded p-3 mb-3">
+                    <h3 class="h6">Laboratory</h3>
+                    @if (manage && !closed)
+                    {
+                        <a asp-controller="Laboratory" asp-action="Create" asp-route-id="@encounter.Id" class="btn btn-sm btn-outline-primary">Request tests</a>
+                    }
+                    @foreach (var order in visitOrders)
+                    {
+                        var localDate = DateOnly.FromDateTime(AppointmentService.ToColombo(order.CreatedAtUtc));
+                        if (Model.From.HasValue && localDate < Model.From.Value || Model.To.HasValue && localDate > Model.To.Value)
+                            continue;
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <a asp-controller="Laboratory" asp-action="Details" asp-route-id="@order.Id">@localDate.ToString("dd MMM yyyy") ? @order.Number</a>
+                            <span class="badge text-bg-light border">@order.Status</span>
+                            @if (order.Status == LabOrderStatus.Completed)
+                            {
+                                <a asp-controller="Laboratory" asp-action="Report" asp-route-id="@order.Id">Released report</a>
+                            }
+                        </div>
+                    }
+                    @if (visitOrders.Length == 0) { <p class="text-muted mb-0 mt-2">No laboratory requests.</p> }
+                </div>
+            }
             @if (records.Length == 0)
             {
                 <p class="text-muted mb-0">No clinical entries match this view.</p>

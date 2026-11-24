@@ -1,0 +1,155 @@
+@model LabOrderPage
+@{
+    ViewData["Title"] = Model.Print ? "Released laboratory report" : "Laboratory request";
+    var order = Model.Order;
+    var patient = order.Encounter.Patient;
+    var doctor = order.Encounter.Doctor;
+    var working = Model.Staff && !Model.Print && order.Status != LabOrderStatus.Cancelled;
+    string Local(DateTime utc) => AppointmentService.ToColombo(utc).ToString("dd MMM yyyy HH:mm");
+}
+@if (Model.Print)
+{
+    <style media="print">header, footer, .d-print-none { display: none !important; } .lab-item { break-inside: avoid; }</style>
+}
+<div class="d-flex gap-2 justify-content-between align-items-start flex-wrap mb-3">
+    <div><h1 class="h3">@ViewData["Title"]</h1><p class="mb-0 text-break">@order.Number <span class="badge text-bg-light border">@order.Status</span></p></div>
+    <div class="d-print-none d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">Requests</a>
+        @if (Model.Print)
+        {
+            <a asp-action="Details" asp-route-id="@order.Id" class="btn btn-outline-secondary">History</a>
+            <button type="button" data-lab-print class="btn btn-primary">Print or save PDF</button>
+        }
+        else if (order.Status == LabOrderStatus.Completed)
+        {
+            <a asp-action="Report" asp-route-id="@order.Id" class="btn btn-primary">Released report</a>
+        }
+    </div>
+</div>
+<partial name="_Messages" />
+<div class="card mb-3"><div class="card-body">
+    <p><strong>Patient</strong> @patient.FirstName @patient.LastName ? @patient.PatientNumber</p>
+    <p><strong>Requesting doctor</strong> @doctor.FirstName @doctor.LastName</p>
+    <p><strong>Requested</strong> @Local(order.CreatedAtUtc) Asia/Colombo</p>
+    @if (Model.Print) { <p class="mb-0"><strong>Report generated</strong> @Local(Model.GeneratedAtUtc) Asia/Colombo</p> }
+    else if (order.Instructions is not null) { <p class="text-break mb-0"><strong>Instructions</strong> @order.Instructions</p> }
+    @if (order.CancellationReason is not null) { <p><strong>Cancellation reason</strong> @order.CancellationReason</p> }
+    @if (!Model.Staff && !Model.Print)
+    {
+        <a class="d-print-none" asp-controller="MedicalRecords" asp-action="Encounter" asp-route-id="@order.EncounterId">Open encounter</a>
+    }
+</div></div>
+@if (Model.CanCancel && order.Status == LabOrderStatus.Requested && order.Items.All(item => item.Samples.Count == 0))
+{
+    <form asp-action="Cancel" asp-route-id="@order.Id" method="post" class="mb-3 d-flex flex-wrap gap-2 align-items-end" data-lab-form data-confirm="Cancel this request?">
+        <input type="hidden" name="Token" value="@order.ConcurrencyToken" />
+        <label>Reason for cancellation <input name="Reason" maxlength="500" required class="form-control" /></label>
+        <button class="btn btn-outline-danger">Cancel request</button>
+    </form>
+}
+@foreach (var item in order.Items.OrderBy(item => item.Code))
+{
+    var verified = item.Results.Where(result => result.Status == LabResultStatus.Verified).OrderByDescending(result => result.VerifiedAtUtc).ToArray();
+    var activeSample = item.Samples.SingleOrDefault(sample => sample.Status != LabSampleStatus.Rejected);
+    var latest = verified.SingleOrDefault(result => !verified.Any(revision => revision.PreviousId == result.Id));
+    var samples = Model.Print ? item.Samples.Where(sample => sample.Id == latest?.SampleId) : item.Samples;
+    <section class="card lab-item mb-3"><div class="card-body">
+        <h2 class="h5">@item.Code ? @item.Name</h2>
+        <p class="text-muted">Specimen @item.Specimen @if (item.Unit is not null) { <span> ? Unit @item.Unit</span> }</p>
+        @foreach (var sample in samples.OrderByDescending(sample => sample.CreatedAtUtc))
+        {
+            var next = sample.Status == LabSampleStatus.Collected ? "Receive" : "Process";
+            <div class="border rounded p-2 mb-2">
+                <p class="mb-1 text-break">@sample.Accession ? @sample.Status ? collected @Local(sample.CreatedAtUtc)</p>
+                @if (sample.ReceivedAtUtc is DateTime received) { <p class="mb-1">Received @Local(received)</p> }
+                @if (sample.ProcessingAtUtc is DateTime processed) { <p class="mb-1">Processing started @Local(processed)</p> }
+                @if (sample.RejectedAtUtc is DateTime rejected) { <p class="mb-1">Rejected @Local(rejected) ? @sample.RejectionReason</p> }
+                @if (working && sample.Status is LabSampleStatus.Collected or LabSampleStatus.Received)
+                {
+                    <form asp-action="@next" asp-route-id="@order.Id" method="post" class="d-inline-block mb-2" data-lab-form>
+                        <input type="hidden" name="Token" value="@order.ConcurrencyToken" />
+                        <input type="hidden" name="ItemId" value="@item.Id" />
+                        <input type="hidden" name="SampleId" value="@sample.Id" />
+                        <button class="btn btn-sm btn-outline-primary">@next sample</button>
+                    </form>
+                }
+                @if (working && sample.Status != LabSampleStatus.Rejected && item.Results.All(result => result.SampleId != sample.Id))
+                {
+                    <form asp-action="Reject" asp-route-id="@order.Id" method="post" class="d-flex gap-2 flex-wrap align-items-end" data-lab-form>
+                        <input type="hidden" name="Token" value="@order.ConcurrencyToken" />
+                        <input type="hidden" name="ItemId" value="@item.Id" />
+                        <input type="hidden" name="SampleId" value="@sample.Id" />
+                        <label>Rejection reason <input name="Reason" maxlength="500" required class="form-control form-control-sm" /></label>
+                        <button class="btn btn-sm btn-outline-danger">Reject sample</button>
+                    </form>
+                }
+            </div>
+        }
+        @if (working && activeSample is null)
+        {
+            <form asp-action="Collect" asp-route-id="@order.Id" method="post" class="d-flex gap-2 flex-wrap align-items-end mb-3" data-lab-form>
+                <input type="hidden" name="Token" value="@order.ConcurrencyToken" />
+                <input type="hidden" name="ItemId" value="@item.Id" />
+                <label>Confirm patient number <input name="PatientNumber" required maxlength="30" class="form-control form-control-sm" /></label>
+                <label>Confirm order number <input name="OrderNumber" required maxlength="36" class="form-control form-control-sm" /></label>
+                <button class="btn btn-sm btn-primary">@(item.Samples.Count > 0 ? "Collect replacement" : "Collect sample")</button>
+            </form>
+        }
+        @if (!Model.Staff && verified.Length == 0) { <p class="text-muted">No verified result available.</p> }
+        @foreach (var result in (Model.Print ? verified.Where(result => result.Id == latest?.Id) : item.Results.OrderByDescending(result => result.CreatedAtUtc)))
+        {
+            <div class="border rounded p-3 mb-2">
+                <p class="mb-1">
+                    <span class="badge text-bg-light border">@result.Status</span>
+                    @if (result.Status == LabResultStatus.Verified && latest?.Id != result.Id)
+                    {
+                        <span class="badge text-bg-secondary">Historical</span>
+                    }
+                    @if (result.PreviousId.HasValue) { <span class="badge text-bg-secondary">Amendment</span> }
+                    <strong>@(result.Value?.ToString("0.######") ?? result.QualitativeValue) @result.Unit</strong>
+                </p>
+                <p class="text-muted mb-1">Entered @Local(result.CreatedAtUtc)</p>
+                @if (result.SubmittedAtUtc is DateTime submitted) { <p class="mb-1">Submitted @Local(submitted)</p> }
+                @if (result.VerifiedAtUtc is DateTime signed) { <p class="mb-1">Verified by @result.VerifierName ? @Local(signed)</p> }
+                @if (result.Note is not null) { <p class="text-break mb-1">@result.Note</p> }
+                @if (result.AmendmentReason is not null) { <p class="text-break mb-1">Correction reason ? @result.AmendmentReason</p> }
+                @if (working && result.Status != LabResultStatus.Verified)
+                {
+                    var action = result.Status == LabResultStatus.Draft ? "Submit" : "Verify";
+                    @if (result.Status == LabResultStatus.Draft)
+                    {
+                        <partial name="_ResultForm" model="(OrderId: order.Id, Token: order.ConcurrencyToken, Item: item, SampleId: result.SampleId, Result: (LaboratoryResult?)result, Amend: false)" />
+                    }
+                    <form asp-action="@action" asp-route-id="@order.Id" method="post" data-lab-form data-confirm="@(action == "Verify" ? "Verify and sign this result?" : null)">
+                        <input type="hidden" name="Token" value="@order.ConcurrencyToken" />
+                        <input type="hidden" name="ItemId" value="@item.Id" />
+                        <input type="hidden" name="ResultId" value="@result.Id" />
+                        <button class="btn btn-sm btn-primary">@action result</button>
+                    </form>
+                }
+                @if (working && result.Status == LabResultStatus.Submitted)
+                {
+                    <form asp-action="Return" asp-route-id="@order.Id" method="post" data-lab-form class="mt-2">
+                        <input type="hidden" name="Token" value="@order.ConcurrencyToken" />
+                        <input type="hidden" name="ItemId" value="@item.Id" />
+                        <input type="hidden" name="ResultId" value="@result.Id" />
+                        <button class="btn btn-sm btn-outline-secondary">Return to draft</button>
+                    </form>
+                }
+                @if (working && result.Status == LabResultStatus.Verified && !item.Results.Any(other => other.PreviousId == result.Id))
+                {
+                    <details><summary>Draft a correction</summary>
+                        <partial name="_ResultForm" model="(OrderId: order.Id, Token: order.ConcurrencyToken, Item: item, SampleId: result.SampleId, Result: (LaboratoryResult?)result, Amend: true)" />
+                    </details>
+                }
+            </div>
+        }
+        @if (working && activeSample?.Status == LabSampleStatus.Processing && item.Results.Count == 0)
+        {
+            <partial name="_ResultForm" model="(OrderId: order.Id, Token: order.ConcurrencyToken, Item: item, SampleId: activeSample.Id, Result: (LaboratoryResult?)null, Amend: false)" />
+        }
+    </div></section>
+}
+@section Scripts {
+    <script src="~/js/laboratory.js" asp-append-version="true"></script>
+}

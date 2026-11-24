@@ -553,6 +553,355 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.ToTable("doctor_schedules", (string)null);
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CancelledByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EncounterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Instructions")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
+                    b.Property<Guid>("RequestKey")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.HasIndex("EncounterId", "RequestKey")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "CreatedAtUtc");
+
+                    b.ToTable("laboratory_orders", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_lab_order_cancel", "(\"Status\" = 'Cancelled') = (\"CancelledAtUtc\" IS NOT NULL AND \"CancelledByUserId\" IS NOT NULL AND \"CancellationReason\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_lab_order_status", "\"Status\" IN ('Requested','SampleCollected','InProgress','ResultsEntered','Completed','Cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryOrderItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Specimen")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<Guid>("TestId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TestId");
+
+                    b.HasIndex("OrderId", "TestId")
+                        .IsUnique();
+
+                    b.ToTable("laboratory_order_items", (string)null);
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryResult", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AmendmentReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("PreviousId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("QualitativeValue")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<Guid>("SampleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("SubmittedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("SubmittedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Value")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<DateTime?>("VerifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("VerifiedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("VerifierName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId")
+                        .IsUnique()
+                        .HasFilter("\"PreviousId\" IS NULL");
+
+                    b.HasIndex("PreviousId")
+                        .IsUnique();
+
+                    b.HasIndex("PreviousId", "ItemId");
+
+                    b.HasIndex("SampleId", "ItemId");
+
+                    b.ToTable("laboratory_results", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_lab_result_amendment", "(\"PreviousId\" IS NULL) = (\"AmendmentReason\" IS NULL)");
+
+                            t.HasCheckConstraint("ck_lab_result_status", "\"Status\" IN ('Draft','Submitted','Verified')");
+
+                            t.HasCheckConstraint("ck_lab_result_submitted", "(\"Status\" <> 'Draft') = (\"SubmittedAtUtc\" IS NOT NULL AND \"SubmittedByUserId\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_lab_result_value", "(\"Value\" IS NOT NULL) <> (\"QualitativeValue\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_lab_result_verified", "(\"Status\" = 'Verified') = (\"VerifiedAtUtc\" IS NOT NULL AND \"VerifiedByUserId\" IS NOT NULL AND \"VerifierName\" IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratorySample", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Accession")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ProcessingAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ProcessingByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ReceivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReceivedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("RejectedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("RejectedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Accession")
+                        .IsUnique();
+
+                    b.HasIndex("ItemId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" <> 'Rejected'");
+
+                    b.ToTable("laboratory_samples", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_lab_sample_rejected", "(\"Status\" = 'Rejected') = (\"RejectedAtUtc\" IS NOT NULL AND \"RejectedByUserId\" IS NOT NULL AND \"RejectionReason\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_lab_sample_status", "\"Status\" IN ('Collected','Received','Processing','Rejected')");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryTest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("Specimen")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("laboratory_tests", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_lab_test_kind", "\"Kind\" IN ('Quantitative','Qualitative')");
+                        });
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.Patient", b =>
                 {
                     b.Property<Guid>("Id")
@@ -992,6 +1341,65 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.Navigation("Doctor");
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryOrder", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.ClinicalEncounter", "Encounter")
+                        .WithMany()
+                        .HasForeignKey("EncounterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Encounter");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryOrderItem", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.LaboratoryOrder", null)
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.LaboratoryTest", null)
+                        .WithMany()
+                        .HasForeignKey("TestId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryResult", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.LaboratoryOrderItem", null)
+                        .WithMany("Results")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.LaboratoryResult", null)
+                        .WithMany()
+                        .HasForeignKey("PreviousId", "ItemId")
+                        .HasPrincipalKey("Id", "ItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.LaboratorySample", "Sample")
+                        .WithMany()
+                        .HasForeignKey("SampleId", "ItemId")
+                        .HasPrincipalKey("Id", "ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Sample");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratorySample", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.LaboratoryOrderItem", null)
+                        .WithMany("Samples")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientDocument", b =>
                 {
                     b.HasOne("HospitalManagementSystem.Web.Models.Patient", "Patient")
@@ -1071,6 +1479,18 @@ namespace HospitalManagementSystem.Web.Migrations
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalRecord", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryOrder", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.LaboratoryOrderItem", b =>
+                {
+                    b.Navigation("Results");
+
+                    b.Navigation("Samples");
                 });
 #pragma warning restore 612, 618
         }
