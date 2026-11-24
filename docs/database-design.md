@@ -99,6 +99,10 @@ The additive AddLaboratoryManagement migration follows AddElectronicMedicalRecor
 
 AddPharmacyManagement adds medicines, medicine batches, stock movements, dispense headers and dispense lines. A dispense header references a finalized EMR prescription revision. Each line references a prescribed item from that same revision and a stock batch. The migration adds a nullable quantity unit to the existing EMR item table. Stock amounts use numeric(18,3), with whole-count rules for tablets, capsules and each. The immutable ledger and restrictive foreign keys protect inventory history. See [Pharmacy Management](pharmacy-management.md) for adopted policies.
 
+### Implemented in Stage 10: Billing and Payments
+
+AddBillingManagement follows AddPharmacyManagement. It adds billing services, effective prices, invoices, invoice items, payments and payment reversals. Issued invoice items snapshot descriptions, prices, source identifiers and LKR totals. Receipts are identified by the original payment, and a reversal is a separate immutable relation. Restrictive foreign keys preserve clinical and financial history. See [Billing and Payments](billing-management.md) for scope and reporting rules.
+
 ## Core conventions
 
 - PostgreSQL `uuid` values are used for primary and foreign keys.

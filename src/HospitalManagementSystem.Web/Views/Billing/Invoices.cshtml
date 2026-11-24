@@ -1,0 +1,40 @@
+@model BillingPage<InvoiceSummary>
+@{ ViewData["Title"] = Model.Filter.Outstanding ? "Outstanding balances" : "Invoice directory"; var filter = Model.Filter; }
+<h1 class="h3">@ViewData["Title"]</h1>
+<partial name="_Links" />
+<form asp-action="Invoices" method="get" class="row g-2 mb-3 d-print-none">
+    <label class="col-md-4">Invoice number or exact patient number <input name="Search" value="@filter.Search" class="form-control" maxlength="100" /></label>
+    <label class="col-md-2">From <input name="From" type="date" value="@(filter.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">To <input name="To" type="date" value="@(filter.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
+    <label class="col-md-2">Invoice status <select name="Status" class="form-select"><option value="">All</option>
+        @foreach (var state in Enum.GetValues<InvoiceStatus>())
+        { <option value="@state" selected="@(state == filter.Status)">@state</option> }
+    </select></label>
+    <label class="col-md-2">Payment status <select name="PaymentStatus" class="form-select"><option value="">All</option>
+        @foreach (var state in new[] { "Unpaid", "Partial", "Paid" })
+        { <option value="@state" selected="@(state == filter.PaymentStatus)">@state</option> }
+    </select></label>
+    <label class="col-md-2">Category <select name="Category" class="form-select"><option value="">All</option>
+        @foreach (var category in Enum.GetValues<BillingCategory>())
+        { <option value="@category" selected="@(category == filter.Category)">@category</option> }
+    </select></label>
+    <label class="col-md-2 align-self-end"><input type="checkbox" name="Outstanding" checked="@filter.Outstanding" value="true" /> Outstanding only</label>
+    <label class="col-md-2 align-self-end"><input type="checkbox" name="Oldest" checked="@filter.Oldest" value="true" /> Oldest first</label>
+    <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+</form>
+<partial name="_Print" />
+@if (Model.Rows.Count == 0) { <p>No invoices match these filters.</p> }
+else
+{
+    <div class="table-responsive"><table class="table"><thead><tr><th>Invoice</th><th>Patient</th><th>Activity date</th><th>Status</th><th>Total (LKR)</th><th>Outstanding (LKR)</th></tr></thead><tbody>
+    @foreach (var row in Model.Rows)
+    {
+        var status = row.Status != InvoiceStatus.Issued ? row.Status.ToString() :
+            row.Total == row.Paid ? "Paid" : row.Paid == 0 ? "Unpaid" : "Partially paid";
+        <tr><td><a asp-action="Details" asp-route-id="@row.Id">@(row.Number ?? "Draft")</a></td><td>@row.Reference ? @row.Patient</td>
+            <td>@AppointmentService.ToColombo(row.IssuedAtUtc ?? row.CreatedAtUtc).ToString("dd MMM yyyy")</td><td>@status</td>
+            <td>@row.Total.ToString("N2")</td><td>@(row.Status == InvoiceStatus.Issued ? (row.Total - row.Paid).ToString("N2") : "?")</td></tr>
+    }
+    </tbody></table></div><partial name="_Paging" model="(filter.Page, Model.Total)" />
+}
+@section Scripts { <script src="~/js/billing.js" asp-append-version="true"></script> }

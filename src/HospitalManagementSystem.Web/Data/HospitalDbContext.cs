@@ -35,12 +35,20 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
     public DbSet<PrescriptionDispense> PrescriptionDispenses => Set<PrescriptionDispense>();
     public DbSet<PrescriptionDispenseItem> PrescriptionDispenseItems => Set<PrescriptionDispenseItem>();
 
+    public DbSet<BillableService> BillableServices => Set<BillableService>();
+    public DbSet<BillingPrice> BillingPrices => Set<BillingPrice>();
+    public DbSet<PatientInvoice> PatientInvoices => Set<PatientInvoice>();
+    public DbSet<PatientInvoiceItem> PatientInvoiceItems => Set<PatientInvoiceItem>();
+    public DbSet<PatientPayment> PatientPayments => Set<PatientPayment>();
+    public DbSet<PaymentReversal> PaymentReversals => Set<PaymentReversal>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         ClinicalModelConfiguration.Configure(modelBuilder);
         LaboratoryModelConfiguration.Configure(modelBuilder);
         PharmacyModelConfiguration.Configure(modelBuilder);
+        BillingModelConfiguration.Configure(modelBuilder);
 
         modelBuilder.Entity<ApplicationUser>(entity =>
         {

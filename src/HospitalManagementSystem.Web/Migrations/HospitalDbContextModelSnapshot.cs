@@ -244,6 +244,94 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.ToTable("audit_log_entries", (string)null);
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.BillableService", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("SourceCode")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<Guid>("Token")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("billing_services", (string)null);
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.BillingPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("From")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly?>("Until")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServiceId", "From")
+                        .IsUnique();
+
+                    b.ToTable("billing_prices", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_billing_price", "\"Amount\" >= 0 AND (\"Until\" IS NULL OR \"Until\" > \"From\")");
+                        });
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalEncounter", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1203,6 +1291,277 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.ToTable("patient_documents", (string)null);
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientInvoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("IssuedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Number")
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PatientLabel")
+                        .HasMaxLength(201)
+                        .HasColumnType("character varying(201)");
+
+                    b.Property<string>("PatientReference")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<Guid?>("ReplacesId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("ServiceDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<Guid>("Token")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("VoidReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("VoidedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("VoidedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Number")
+                        .IsUnique();
+
+                    b.HasIndex("ReplacesId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" <> 'Voided'");
+
+                    b.HasIndex("PatientId", "CreatedAtUtc");
+
+                    b.HasIndex("Status", "IssuedAtUtc");
+
+                    b.ToTable("patient_invoices", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_invoice_issue", "(\"Status\" <> 'Draft') = (\"Number\" IS NOT NULL AND \"IssuedAtUtc\" IS NOT NULL AND \"IssuedByUserId\" IS NOT NULL AND \"PatientLabel\" IS NOT NULL AND \"PatientReference\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_invoice_status", "\"Status\" IN ('Draft','Issued','Voided')");
+
+                            t.HasCheckConstraint("ck_invoice_total", "\"Total\" >= 0");
+
+                            t.HasCheckConstraint("ck_invoice_void", "(\"Status\" = 'Voided') = (\"VoidedAtUtc\" IS NOT NULL AND \"VoidedByUserId\" IS NOT NULL AND \"VoidReason\" IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientInvoiceItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AppointmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<bool>("Claimed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<Guid?>("DispenseItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("LabItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<Guid>("PriceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.HasIndex("PriceId");
+
+                    b.HasIndex(new[] { "AppointmentId" }, "ux_billing_appointment_claim")
+                        .IsUnique()
+                        .HasFilter("\"Claimed\" AND \"AppointmentId\" IS NOT NULL");
+
+                    b.HasIndex(new[] { "DispenseItemId" }, "ux_billing_dispense_claim")
+                        .IsUnique()
+                        .HasFilter("\"Claimed\" AND \"DispenseItemId\" IS NOT NULL");
+
+                    b.HasIndex(new[] { "LabItemId" }, "ux_billing_lab_claim")
+                        .IsUnique()
+                        .HasFilter("\"Claimed\" AND \"LabItemId\" IS NOT NULL");
+
+                    b.ToTable("patient_invoice_items", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_invoice_item_amount", "\"Quantity\" > 0 AND \"UnitPrice\" >= 0 AND \"Total\" = round(\"Quantity\" * \"UnitPrice\", 2)");
+
+                            t.HasCheckConstraint("ck_invoice_item_source", "(\"Category\" = 'Consultation' AND \"AppointmentId\" IS NOT NULL AND \"LabItemId\" IS NULL AND \"DispenseItemId\" IS NULL) OR (\"Category\" = 'Laboratory' AND \"LabItemId\" IS NOT NULL AND \"AppointmentId\" IS NULL AND \"DispenseItemId\" IS NULL) OR (\"Category\" = 'Pharmacy' AND \"DispenseItemId\" IS NOT NULL AND \"AppointmentId\" IS NULL AND \"LabItemId\" IS NULL) OR (\"Category\" = 'Other' AND \"AppointmentId\" IS NULL AND \"LabItemId\" IS NULL AND \"DispenseItemId\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("BalanceAfter")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("BankReference")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ReceiptNumber")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("character varying(36)");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RecordedBy")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("RequestKey")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BankReference")
+                        .IsUnique();
+
+                    b.HasIndex("InvoiceId");
+
+                    b.HasIndex("ReceiptNumber")
+                        .IsUnique();
+
+                    b.HasIndex("RecordedAtUtc");
+
+                    b.HasIndex("ActorId", "RequestKey")
+                        .IsUnique();
+
+                    b.ToTable("patient_payments", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_payment_amount", "\"Amount\" > 0 AND \"BalanceAfter\" >= 0");
+
+                            t.HasCheckConstraint("ck_payment_method", "(\"Method\" = 'Cash' AND \"BankReference\" IS NULL) OR (\"Method\" = 'BankTransfer' AND length(trim(\"BankReference\")) > 0 AND \"BankReference\" IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PaymentReversal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("PaymentId")
+                        .IsUnique();
+
+                    b.ToTable("payment_reversals", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_payment_reversal_reason", "length(trim(\"Reason\")) > 0");
+                        });
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.PharmacyStockMovement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1566,6 +1925,15 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.BillingPrice", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.BillableService", null)
+                        .WithMany("Prices")
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalEncounter", b =>
                 {
                     b.HasOne("HospitalManagementSystem.Web.Models.Appointment", "Appointment")
@@ -1721,6 +2089,74 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientInvoice", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.PatientInvoice", null)
+                        .WithMany()
+                        .HasForeignKey("ReplacesId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientInvoiceItem", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.Appointment", null)
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.PrescriptionDispenseItem", null)
+                        .WithMany()
+                        .HasForeignKey("DispenseItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.PatientInvoice", null)
+                        .WithMany("Items")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.LaboratoryOrderItem", null)
+                        .WithMany()
+                        .HasForeignKey("LabItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.BillingPrice", "Price")
+                        .WithMany()
+                        .HasForeignKey("PriceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Price");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientPayment", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.PatientInvoice", "Invoice")
+                        .WithMany("Payments")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PaymentReversal", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.PatientPayment", null)
+                        .WithOne("Reversal")
+                        .HasForeignKey("HospitalManagementSystem.Web.Models.PaymentReversal", "PaymentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.PharmacyStockMovement", b =>
                 {
                     b.HasOne("HospitalManagementSystem.Web.Models.MedicineBatch", "Batch")
@@ -1835,6 +2271,11 @@ namespace HospitalManagementSystem.Web.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.BillableService", b =>
+                {
+                    b.Navigation("Prices");
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalEncounter", b =>
                 {
                     b.Navigation("Records");
@@ -1860,6 +2301,18 @@ namespace HospitalManagementSystem.Web.Migrations
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.Medicine", b =>
                 {
                     b.Navigation("Batches");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientInvoice", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PatientPayment", b =>
+                {
+                    b.Navigation("Reversal");
                 });
 
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionDispense", b =>
