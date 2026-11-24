@@ -1,0 +1,48 @@
+@model ClinicalOverview
+@{
+    ViewData["Title"] = "Medical records";
+}
+<h1 class="h3 mb-3">Medical records</h1>
+<partial name="_Messages" />
+<section class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">Checked-in visits</h2>
+        @if (Model.EligibleVisits.Count == 0)
+        {
+            <p class="text-muted mb-0">You have no checked-in visits awaiting an encounter.</p>
+        }
+        @foreach (var visit in Model.EligibleVisits)
+        {
+            <div class="d-flex flex-wrap align-items-center gap-2 border-top py-2">
+                <span class="me-auto">@visit.Patient.FirstName @visit.Patient.LastName ? @AppointmentService.ToColombo(visit.StartAtUtc).ToString("dd MMM yyyy HH:mm")</span>
+                <a class="btn btn-sm btn-outline-secondary" asp-controller="Appointments" asp-action="Details" asp-route-id="@visit.Id">Appointment</a>
+                <form asp-action="Open" method="post">
+                    <input type="hidden" name="appointmentId" value="@visit.Id" />
+                    <button class="btn btn-sm btn-primary">Open encounter</button>
+                </form>
+            </div>
+        }
+    </div>
+</section>
+<section class="card">
+    <div class="card-body">
+        <h2 class="h5">Your encounters</h2>
+        @if (Model.Encounters.Count == 0)
+        {
+            <p class="text-muted mb-0">No clinical encounters are available.</p>
+        }
+        <div class="list-group list-group-flush">
+            @foreach (var encounter in Model.Encounters)
+            {
+                <a class="list-group-item list-group-item-action d-flex flex-wrap justify-content-between gap-2"
+                   asp-action="Encounter" asp-route-id="@encounter.Id">
+                    <span>@encounter.Patient.FirstName @encounter.Patient.LastName ? @AppointmentService.ToColombo(encounter.CreatedAtUtc).ToString("dd MMM yyyy HH:mm")</span>
+                    <span class="badge text-bg-light border">@(encounter.FinalizedAtUtc.HasValue ? "Finalized" : "Open")</span>
+                </a>
+            }
+        </div>
+    </div>
+</section>
+@section Scripts {
+    <script src="~/js/clinical-records.js" asp-append-version="true"></script>
+}

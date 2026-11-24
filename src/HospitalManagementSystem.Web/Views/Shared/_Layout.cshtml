@@ -52,10 +52,10 @@
                                     <a class="nav-link text-dark" asp-controller="Doctors" asp-action="Index">Doctors</a>
                                 </li>
                             }
-                            @if (User.IsInRole("Administrator") || User.IsInRole("Receptionist") || User.IsInRole("Doctor"))
+                            @if (User.IsInRole("Doctor"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="Appointments" asp-action="Index">Appointments</a>
+                                    <a class="nav-link text-dark" asp-controller="MedicalRecords" asp-action="Index">Medical records</a>
                                 </li>
                             }
                         }

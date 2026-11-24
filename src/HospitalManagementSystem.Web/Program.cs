@@ -3,6 +3,7 @@ using HospitalManagementSystem.Web.Data;
 using HospitalManagementSystem.Web.Models;
 using HospitalManagementSystem.Web.Services;
 using HospitalManagementSystem.Web.Services.Appointments;
+using HospitalManagementSystem.Web.Services.Clinical;
 using HospitalManagementSystem.Web.Services.Doctors;
 using HospitalManagementSystem.Web.Services.Patients;
 using Microsoft.AspNetCore.Identity;
@@ -85,6 +86,7 @@ builder.Services.Configure<SecurityStampValidatorOptions>(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<ClinicalRecordService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IPatientNumberGenerator, PatientNumberGenerator>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();

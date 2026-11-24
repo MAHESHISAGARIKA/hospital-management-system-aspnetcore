@@ -244,6 +244,142 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.ToTable("audit_log_entries", (string)null);
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalEncounter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AppointmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DoctorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("FinalizedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("FinalizedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
+
+                    b.HasIndex("PatientId");
+
+                    b.HasIndex("DoctorId", "PatientId", "CreatedAtUtc");
+
+                    b.ToTable("clinical_encounters", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_encounter_finalized", "(\"FinalizedAtUtc\" IS NULL) = (\"FinalizedByUserId\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AmendmentReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EncounterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("FinalizedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("FinalizedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid?>("PreviousRevisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("RecordedDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UpdatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PreviousRevisionId")
+                        .IsUnique();
+
+                    b.HasIndex("EncounterId", "RecordedDate");
+
+                    b.HasIndex("PreviousRevisionId", "EncounterId", "Kind");
+
+                    b.ToTable("clinical_records", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_clinical_record_finalized", "(\"Status\" = 'Draft' AND \"FinalizedAtUtc\" IS NULL AND \"FinalizedByUserId\" IS NULL) OR (\"Status\" <> 'Draft' AND \"FinalizedAtUtc\" IS NOT NULL AND \"FinalizedByUserId\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_clinical_record_kind", "\"Kind\" IN ('Diagnosis','Prescription','Treatment')");
+
+                            t.HasCheckConstraint("ck_clinical_record_revision", "(\"PreviousRevisionId\" IS NULL AND \"AmendmentReason\" IS NULL AND \"Status\" <> 'Voided') OR (\"PreviousRevisionId\" IS NOT NULL AND length(trim(\"AmendmentReason\")) > 0 AND \"AmendmentReason\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_clinical_record_status", "\"Status\" IN ('Draft','Finalized','Voided')");
+                        });
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.Department", b =>
                 {
                     b.Property<Guid>("Id")
@@ -560,6 +696,70 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.ToTable("patient_documents", (string)null);
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Dose")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("DoseUnit")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Duration")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Instructions")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Medicine")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PrescriptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Route")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Strength")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PrescriptionId", "Position")
+                        .IsUnique();
+
+                    b.ToTable("clinical_prescription_items", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_prescription_item_quantity", "\"Quantity\" IS NULL OR \"Quantity\" > 0");
+                        });
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
                 {
                     b.Property<Guid>("Id")
@@ -718,6 +918,51 @@ namespace HospitalManagementSystem.Web.Migrations
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalEncounter", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.Appointment", "Appointment")
+                        .WithMany()
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.Doctor", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalRecord", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.ClinicalEncounter", "Encounter")
+                        .WithMany("Records")
+                        .HasForeignKey("EncounterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HospitalManagementSystem.Web.Models.ClinicalRecord", "PreviousRevision")
+                        .WithMany()
+                        .HasForeignKey("PreviousRevisionId", "EncounterId", "Kind")
+                        .HasPrincipalKey("Id", "EncounterId", "Kind")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Encounter");
+
+                    b.Navigation("PreviousRevision");
+                });
+
             modelBuilder.Entity("HospitalManagementSystem.Web.Models.Doctor", b =>
                 {
                     b.HasOne("HospitalManagementSystem.Web.Models.ApplicationUser", "ApplicationUser")
@@ -756,6 +1001,15 @@ namespace HospitalManagementSystem.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.PrescriptionItem", b =>
+                {
+                    b.HasOne("HospitalManagementSystem.Web.Models.ClinicalRecord", null)
+                        .WithMany("Items")
+                        .HasForeignKey("PrescriptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -807,6 +1061,16 @@ namespace HospitalManagementSystem.Web.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalEncounter", b =>
+                {
+                    b.Navigation("Records");
+                });
+
+            modelBuilder.Entity("HospitalManagementSystem.Web.Models.ClinicalRecord", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

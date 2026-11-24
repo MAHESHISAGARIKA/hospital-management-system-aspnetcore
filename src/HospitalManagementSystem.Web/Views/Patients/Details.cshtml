@@ -19,7 +19,13 @@
     <div class="col-lg-6"><div class="card h-100"><div class="card-body"><h2 class="h5">Contact details</h2><dl class="row mb-0"><dt class="col-sm-5">Phone</dt><dd class="col-sm-7">@(Model.Patient.PhoneNumber ?? "Not provided")</dd><dt class="col-sm-5">Email</dt><dd class="col-sm-7">@(Model.Patient.Email ?? "Not provided")</dd><dt class="col-sm-5">Address</dt><dd class="col-sm-7">@(Model.Patient.Address ?? "Not provided")</dd><dt class="col-sm-5">Emergency contact</dt><dd class="col-sm-7">@(Model.Patient.EmergencyContactName ?? "Not provided")</dd><dt class="col-sm-5">Emergency phone</dt><dd class="col-sm-7">@(Model.Patient.EmergencyContactPhone ?? "Not provided")</dd></dl></div></div></div>
 </div>
 
-<div class="card mt-3"><div class="card-body"><h2 class="h5">Medical history</h2><div class="alert alert-light border mb-0">No medical history recorded. Complete EMR workflows are pending a later stage.</div></div></div>
+@if (User.IsInRole("Doctor"))
+{
+    <div class="card mt-3"><div class="card-body">
+        <h2 class="h5">Medical history</h2>
+        <a asp-controller="MedicalRecords" asp-action="Index" class="btn btn-outline-primary">Open medical records</a>
+    </div></div>
+}
 
 <div class="card mt-3"><div class="card-body"><h2 class="h5">Documents</h2>
     @if (User.IsInRole("Administrator") || User.IsInRole("Doctor"))

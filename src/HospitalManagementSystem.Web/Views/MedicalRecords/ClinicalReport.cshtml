@@ -1,0 +1,195 @@
+@model ClinicalReport
+@{
+    ViewData["Title"] = Model.Title;
+    var timeline = Model.Title == "Patient clinical timeline";
+}
+@if (Model.Printable)
+{
+    <style media="print">
+        header, footer, .d-print-none { display: none !important; }
+        .clinical-entry { break-inside: avoid; }
+    </style>
+}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <h1 class="h3 mb-0">@Model.Title</h1>
+    <div class="d-print-none d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">Medical records</a>
+        @if (Model.Printable)
+        {
+            <button type="button" class="btn btn-primary" data-print-clinical>Print or save PDF</button>
+        }
+    </div>
+</div>
+<partial name="_Messages" />
+@if (timeline)
+{
+    var first = Model.Encounters[0];
+    <form method="get" asp-action="Patient" asp-route-id="@first.PatientId" class="row g-2 mb-4 d-print-none">
+        <label class="col-md-3">From <input type="date" name="from" class="form-control" value="@Model.From?.ToString("yyyy-MM-dd")" /></label>
+        <label class="col-md-3">To <input type="date" name="to" class="form-control" value="@Model.To?.ToString("yyyy-MM-dd")" /></label>
+        <label class="col-md-4">Encounter
+            <select name="encounterId" class="form-select">
+                <option value="">All permitted encounters</option>
+                @foreach (var visit in Model.Encounters)
+                {
+                    <option value="@visit.Id" selected="@(Model.EncounterId == visit.Id)">@AppointmentService.ToColombo(visit.CreatedAtUtc).ToString("dd MMM yyyy HH:mm")</option>
+                }
+            </select>
+        </label>
+        <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
+    </form>
+    <ol class="list-group list-group-numbered mb-4">
+        @foreach (var entry in Model.Encounters.SelectMany(visit => visit.Records)
+            .Where(record => (!Model.From.HasValue || record.RecordedDate >= Model.From.Value) &&
+                (!Model.To.HasValue || record.RecordedDate <= Model.To.Value))
+            .OrderByDescending(record => record.RecordedDate).ThenByDescending(record => record.CreatedAtUtc))
+        {
+            <li class="list-group-item">
+                <a href="#record-@entry.Id">@entry.RecordedDate.ToString("dd MMM yyyy") ? @entry.Kind</a>
+                <span class="badge text-bg-light border">@entry.Status</span>
+            </li>
+        }
+    </ol>
+}
+@if (Model.Printable)
+{
+    <p class="text-muted">Generated @AppointmentService.ToColombo(Model.GeneratedAtUtc).ToString("dd MMM yyyy HH:mm") Asia/Colombo. Drafts and historical revisions are labeled below.</p>
+}
+@foreach (var encounter in Model.Encounters)
+{
+    var closed = encounter.FinalizedAtUtc.HasValue;
+    var manage = !timeline && !Model.Printable && !Model.RecordId.HasValue;
+    var records = encounter.Records
+        .Where(record => (!Model.RecordId.HasValue || record.Id == Model.RecordId) &&
+            (!Model.From.HasValue || record.RecordedDate >= Model.From.Value) &&
+            (!Model.To.HasValue || record.RecordedDate <= Model.To.Value))
+        .OrderByDescending(record => record.RecordedDate).ThenByDescending(record => record.CreatedAtUtc).ToArray();
+    <section class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-wrap gap-2 align-items-start justify-content-between mb-3">
+                <div>
+                    <h2 class="h5">@encounter.Patient.FirstName @encounter.Patient.LastName ? @encounter.Patient.PatientNumber</h2>
+                    <p class="mb-1">Dr. @encounter.Doctor.FirstName @encounter.Doctor.LastName</p>
+                    <p class="text-muted mb-0">@AppointmentService.ToColombo(encounter.CreatedAtUtc).ToString("dd MMM yyyy HH:mm") Asia/Colombo ? @(closed ? "Finalized encounter" : "Open encounter")</p>
+                </div>
+                <div class="d-print-none d-flex flex-wrap gap-2">
+                    @if (manage)
+                    {
+                        <a asp-action="Patient" asp-route-id="@encounter.PatientId" class="btn btn-sm btn-outline-secondary">Patient timeline</a>
+                        <a asp-action="Report" asp-route-id="@encounter.Id" class="btn btn-sm btn-outline-primary">Encounter report</a>
+                    }
+                    else
+                    {
+                        <a asp-action="Encounter" asp-route-id="@encounter.Id" class="btn btn-sm btn-outline-secondary">Encounter</a>
+                    }
+                    @if (Model.RecordId.HasValue && !Model.Printable)
+                    {
+                        <a asp-action="Prescription" asp-route-id="@encounter.Id" asp-route-recordId="@Model.RecordId" asp-route-print="true" class="btn btn-sm btn-outline-primary">Print view</a>
+                    }
+                </div>
+            </div>
+            @if (manage && !closed)
+            {
+                <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
+                    @foreach (var kind in Enum.GetValues<ClinicalRecordKind>())
+                    {
+                        <a asp-action="Entry" asp-route-id="@encounter.Id" asp-route-kind="@kind" class="btn btn-sm btn-outline-primary">Add @kind.ToString().ToLowerInvariant()</a>
+                    }
+                    @if (!encounter.Records.Any(record => record.Status == ClinicalStatus.Draft))
+                    {
+                        <form asp-action="FinalizeEncounter" asp-route-id="@encounter.Id" method="post" data-confirm="Finalize this encounter?">
+                            <input type="hidden" name="encounterToken" value="@encounter.ConcurrencyToken" />
+                            <button class="btn btn-sm btn-primary">Finalize encounter</button>
+                        </form>
+                    }
+                </div>
+            }
+            @if (records.Length == 0)
+            {
+                <p class="text-muted mb-0">No clinical entries match this view.</p>
+            }
+            @foreach (var record in records)
+            {
+                var successor = encounter.Records.SingleOrDefault(item => item.PreviousRevisionId == record.Id);
+                <article id="record-@record.Id" class="clinical-entry border rounded p-3 mb-3">
+                    <h3 class="h6">@record.Kind <span class="badge text-bg-light border">@record.Status</span>
+                        @if (successor is { Status: ClinicalStatus.Finalized or ClinicalStatus.Voided })
+                        {
+                            <span class="badge text-bg-secondary">Historical revision</span>
+                        }
+                    </h3>
+                    <p class="text-muted small mb-2">@record.RecordedDate.ToString("dd MMM yyyy")
+                        @if (record.FinalizedAtUtc is DateTime finalized)
+                        {
+                            <span> ? Signed @AppointmentService.ToColombo(finalized).ToString("dd MMM yyyy HH:mm") Asia/Colombo</span>
+                        }
+                    </p>
+                    @if (record.PreviousRevisionId.HasValue)
+                    {
+                        <p class="mb-2"><strong>Correction reason</strong> @record.AmendmentReason</p>
+                    }
+                    @if (record.Content is not null)
+                    {
+                        <p class="text-break" style="white-space: pre-wrap">@record.Content</p>
+                    }
+                    @if (record.Code is not null)
+                    {
+                        <p>Code @record.Code</p>
+                    }
+                    @if (record.Items.Count > 0)
+                    {
+                        <ul class="list-group list-group-flush mb-2">
+                            @foreach (var item in record.Items.OrderBy(item => item.Position))
+                            {
+                                <li class="list-group-item px-0 text-break">
+                                    <strong>@item.Medicine @item.Strength</strong>
+                                    <span> ? @item.Dose @item.DoseUnit ? @item.Route ? @item.Frequency ? @item.Duration</span>
+                                    @if (item.Quantity.HasValue) { <span> ? Quantity @item.Quantity</span> }
+                                    @if (item.Instructions is not null) { <p class="mb-0">@item.Instructions</p> }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    @if (record.Notes is not null)
+                    {
+                        <p class="text-break" style="white-space: pre-wrap">@record.Notes</p>
+                    }
+                    @if (manage)
+                    {
+                        <div class="d-flex flex-wrap gap-2 d-print-none">
+                            @if (record.Kind == ClinicalRecordKind.Prescription)
+                            {
+                                <a asp-action="Prescription" asp-route-id="@encounter.Id" asp-route-recordId="@record.Id" class="btn btn-sm btn-outline-secondary">Prescription details</a>
+                            }
+                            @if (record.Status == ClinicalStatus.Draft)
+                            {
+                                <a asp-action="Entry" asp-route-id="@encounter.Id" asp-route-recordId="@record.Id" class="btn btn-sm btn-outline-secondary">Edit draft</a>
+                                <form asp-action="FinalizeEntry" asp-route-id="@encounter.Id" asp-route-recordId="@record.Id" method="post" data-confirm="Finalize this record?">
+                                    <input type="hidden" name="EncounterToken" value="@encounter.ConcurrencyToken" />
+                                    <input type="hidden" name="RecordToken" value="@record.ConcurrencyToken" />
+                                    <button class="btn btn-sm btn-primary">Finalize</button>
+                                </form>
+                            }
+                            @if (record.Status == ClinicalStatus.Finalized && successor is null)
+                            {
+                                <a asp-action="Entry" asp-route-id="@encounter.Id" asp-route-recordId="@record.Id" asp-route-amend="true" class="btn btn-sm btn-outline-primary">Create amendment</a>
+                                @if (record.Kind == ClinicalRecordKind.Prescription)
+                                {
+                                    <form asp-action="VoidPrescription" asp-route-id="@encounter.Id" asp-route-recordId="@record.Id" method="post" class="d-flex gap-2" data-confirm="Void this prescription?">
+                                        <input type="hidden" name="EncounterToken" value="@encounter.ConcurrencyToken" />
+                                        <input type="hidden" name="RecordToken" value="@record.ConcurrencyToken" />
+                                        <input name="AmendmentReason" aria-label="Reason for voiding" placeholder="Reason for voiding" maxlength="500" required class="form-control form-control-sm" />
+                                        <button class="btn btn-sm btn-outline-danger">Void</button>
+                                    </form>
+                                }
+                            }
+                        </div>
+                    }
+                </article>
+            }
+        </div>
+    </section>
+}
+@section Scripts {
+    <script src="~/js/clinical-records.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,77 @@
+@model ClinicalEditor
+@{
+    ViewData["Title"] = Model.IsAmendment ? $"Amend {Model.Input.Kind}" : $"{Model.Input.Kind} draft";
+    var medicines = Model.Input.Medicines.Take(20).ToList();
+    var visibleLines = Math.Max(1, medicines.FindLastIndex(item => item.HasContent || item.Id.HasValue) + 1);
+}
+<div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+    <h1 class="h3 mb-0">@ViewData["Title"]</h1>
+    <a asp-action="Encounter" asp-route-id="@Model.EncounterId" class="btn btn-outline-secondary">Back to encounter</a>
+</div>
+<form asp-action="SaveEntry" asp-route-id="@Model.EncounterId" asp-route-recordId="@Model.RecordId" asp-route-amend="@Model.IsAmendment" method="post">
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <input asp-for="Input.EncounterToken" type="hidden" />
+    <input asp-for="Input.RecordToken" type="hidden" />
+    <input asp-for="Input.Kind" type="hidden" />
+    <div class="mb-3">
+        <label asp-for="Input.RecordedDate" class="form-label">Clinical date (Asia/Colombo)</label>
+        <input asp-for="Input.RecordedDate" type="date" required class="form-control" />
+    </div>
+    @if (Model.IsAmendment)
+    {
+        <div class="mb-3">
+            <label asp-for="Input.AmendmentReason" class="form-label">Reason for correction</label>
+            <textarea asp-for="Input.AmendmentReason" class="form-control" required></textarea>
+        </div>
+    }
+    @if (Model.Input.Kind != ClinicalRecordKind.Prescription)
+    {
+        <div class="mb-3">
+            <label asp-for="Input.Content" class="form-label">Clinical description</label>
+            <textarea asp-for="Input.Content" class="form-control" rows="4" required></textarea>
+        </div>
+        @if (Model.Input.Kind == ClinicalRecordKind.Diagnosis)
+        {
+            <div class="mb-3">
+                <label asp-for="Input.Code" class="form-label">Diagnosis code (optional)</label>
+                <input asp-for="Input.Code" class="form-control" />
+            </div>
+        }
+    }
+    else
+    {
+        <div data-medicines>
+            <h2 class="h5">Medicines</h2>
+            @for (var index = 0; index < 20; index++)
+            {
+                var medicine = index < medicines.Count ? medicines[index] : new MedicineInput();
+                var prefix = $"Input.Medicines[{index}]";
+                <fieldset class="border rounded p-3 mb-3" data-medicine hidden="@(index >= visibleLines)">
+                    <legend class="float-none w-auto px-1 fs-6">Medicine @(index + 1)</legend>
+                    <input type="hidden" name="@(prefix).Id" value="@medicine.Id" />
+                    <div class="row g-3">
+                        <label class="col-md-6">Medicine name <input name="@(prefix).Medicine" value="@medicine.Medicine" maxlength="150" class="form-control" /></label>
+                        <label class="col-md-6">Strength <input name="@(prefix).Strength" value="@medicine.Strength" maxlength="60" class="form-control" /></label>
+                        <label class="col-md-3">Dose <input name="@(prefix).Dose" value="@medicine.Dose" maxlength="60" class="form-control" /></label>
+                        <label class="col-md-3">Dose unit <input name="@(prefix).DoseUnit" value="@medicine.DoseUnit" maxlength="40" class="form-control" /></label>
+                        <label class="col-md-3">Route <input name="@(prefix).Route" value="@medicine.Route" maxlength="80" class="form-control" /></label>
+                        <label class="col-md-3">Frequency <input name="@(prefix).Frequency" value="@medicine.Frequency" maxlength="120" class="form-control" /></label>
+                        <label class="col-md-6">Duration <input name="@(prefix).Duration" value="@medicine.Duration" maxlength="80" class="form-control" /></label>
+                        <label class="col-md-6">Quantity <input type="number" min="1" name="@(prefix).Quantity" value="@medicine.Quantity" class="form-control" /></label>
+                        <label class="col-12">Special instructions <textarea name="@(prefix).Instructions" maxlength="500" class="form-control">@medicine.Instructions</textarea></label>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger mt-2" data-remove-medicine>Remove medicine</button>
+                </fieldset>
+            }
+            <button type="button" class="btn btn-outline-secondary mb-3" data-add-medicine>Add medicine</button>
+        </div>
+    }
+    <div class="mb-3">
+        <label asp-for="Input.Notes" class="form-label">Notes (optional)</label>
+        <textarea asp-for="Input.Notes" class="form-control" rows="3"></textarea>
+    </div>
+    <button class="btn btn-primary">Save draft</button>
+</form>
+@section Scripts {
+    <script src="~/js/clinical-records.js" asp-append-version="true"></script>
+}
