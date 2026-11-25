@@ -117,7 +117,7 @@
         <p>@row.Name ? @Local(session.InUtc) ? @(session.OutUtc is DateTime end ? $"{Local(end)} ? {(end-session.InUtc).TotalHours:0.00} hours" : "Clocked in")</p>
         @foreach (var correction in ((StaffAttendanceCorrection[])ViewData["Corrections"]!).Where(c => c.AttendanceId == session.Id))
         { <p>Correction @Local(correction.AtUtc) ? Original @Local(correction.PriorInUtc) to @(correction.PriorOutUtc is DateTime old ? Local(old) : "Open") ? Revised @Local(correction.InUtc) to @Local(correction.OutUtc)</p> }
-        @if (Model.Admin)
+        @if (Model.Admin && session.OutUtc.HasValue)
         {
             <details class="d-print-none"><summary>Correct timestamps</summary>
             <form asp-action="Correct" asp-route-id="@session.Id" method="post">
