@@ -375,3 +375,8 @@ Initial foundations include a unique patient number index, a patient name index 
 - Keep secrets in environment variables or secure configuration stores, never source control.
 - Apply authorization in controllers/services and database-level access controls where the environment requires stronger isolation.
 - Plan encrypted backups and restricted restore procedures.
+
+
+## Staff management
+
+Employee profiles can link to one existing Identity user. Department assignments reference existing departments and record effective periods. Attendance sessions and leave requests belong to employees. Attendance corrections preserve prior times, and leave decisions preserve the actor, time and disposition. Leave requests reference the configured leave type. PostgreSQL exclusion constraints enforce non-overlapping department assignments, attendance sessions and pending or approved leave for each employee.

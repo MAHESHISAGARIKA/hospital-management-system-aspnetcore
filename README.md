@@ -174,3 +174,8 @@ See [Pharmacy Management](docs/pharmacy-management.md) for Stage 9 workflow and 
 See [Billing and Payments](docs/billing-management.md) for policy, workflow and verification.
 
 See [Inpatient and Outpatient Management](docs/inpatient-outpatient-management.md) for Stage 11 roles, workflows and verification.
+
+
+## Staff management
+
+Stage 12 adds employee profiles, department history, attendance, leave and staff reporting. See [staff management](docs/staff-management.md) for the migration and manual verification steps.

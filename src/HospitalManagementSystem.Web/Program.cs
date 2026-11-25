@@ -91,6 +91,7 @@ builder.Services.AddScoped<HospitalManagementSystem.Web.Services.Inpatients.Inpa
 builder.Services.AddScoped<HospitalManagementSystem.Web.Services.Billing.BillingService>();
 builder.Services.AddScoped<HospitalManagementSystem.Web.Services.Pharmacy.PharmacyService>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<HospitalManagementSystem.Web.Services.Staff.StaffService>();
 builder.Services.AddOptions<HospitalManagementSystem.Web.Services.Pharmacy.PharmacyOptions>()
     .BindConfiguration("Pharmacy")
     .Validate(options => options.WarningDays is { Length: > 0 } && options.WarningDays.All(days => days is > 0 and <= 365),

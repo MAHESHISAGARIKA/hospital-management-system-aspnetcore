@@ -58,3 +58,14 @@ This document maps the proposed Hospital Management System requirements to futur
 ## Future test strategy
 
 Future tests should include unit tests for domain rules, EF Core integration tests against disposable PostgreSQL test instances, MVC/integration tests for authorization and HTTP behavior, and end-to-end tests for critical role workflows.
+
+
+## Stage 12 Staff Management
+
+| Requirement | Implementation |
+| --- | --- |
+| Employee administration and department history | Employee directory, existing Identity account linking, activation and dated department assignments |
+| Attendance and corrections | Staff self-service clock actions and administrator corrections with prior values retained |
+| Leave and clinical safeguards | Leave types and request history, administrator decisions and checks against known clinical commitments |
+| Staff reporting | Dashboard totals and staff, attendance and leave views |
+| Payroll, leave entitlements and schedules | Deferred until the hospital defines the applicable policies |

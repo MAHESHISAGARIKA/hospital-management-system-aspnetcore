@@ -1,0 +1,199 @@
+@using HospitalManagementSystem.Web.Models
+@using HospitalManagementSystem.Web.Models.ViewModels
+@using HospitalManagementSystem.Web.Services.Appointments
+@model StaffPage
+@{
+    ViewData["Title"] = "Staff management";
+    var employee = Model.Selected;
+    var choices = (Department[])ViewData["DepartmentChoices"]!;
+    string Local(DateTime at) => AppointmentService.ToColombo(at).ToString("yyyy-MM-dd HH:mm");
+    var today = DateOnly.FromDateTime(AppointmentService.ToColombo(DateTime.UtcNow));
+}
+<h1>Staff management</h1>
+@if (TempData["StaffMessage"] is string message) { <p class="alert alert-info" role="status">@message</p> }
+<nav class="mb-3 d-print-none">
+@if (Model.Admin) { <a href="/Staff">Employee directory</a> <span> | </span> <a href="/Staff/Reports">Reports</a> <span> | </span> }
+<a href="/Staff/My">My profile, attendance and leave</a>
+</nav>
+@if (ViewData["StaffCounts"] is IReadOnlyDictionary<string, int> dashboardCounts)
+{
+    <h2>Staff overview</h2>
+    <dl class="row">
+    @foreach (var count in dashboardCounts) { <dt class="col-sm-4">@count.Key</dt><dd class="col-sm-8">@count.Value</dd> }
+    @foreach (var count in (StaffDepartmentCount[])ViewData["StaffDepartmentCounts"]!)
+    { <dt class="col-sm-4">@count.Name employees</dt><dd class="col-sm-8">@count.Count</dd> }
+    </dl>
+}
+@if (Model.Admin)
+{
+    var accounts = (ApplicationUser[])ViewData["Accounts"]!;
+    <form method="get" action="/Staff" class="row g-2 mb-3 d-print-none">
+        <label class="col-md-4">Name, number or job title <input name="search" value="@Context.Request.Query["search"]" class="form-control" /></label>
+        <label class="col-md-3">Department <select name="department" class="form-select"><option value="">All</option>
+            @foreach (var choice in choices) { <option value="@choice.Id" selected="@(Context.Request.Query["department"] == choice.Id.ToString())">@choice.Name</option> }
+        </select></label>
+        <label class="col-md-2">Status <select name="active" class="form-select"><option value="">All</option><option value="true" selected="@(Context.Request.Query["active"] == "true")">Active</option><option value="false" selected="@(Context.Request.Query["active"] == "false")">Inactive</option></select></label>
+        <button class="btn btn-outline-primary col-md-2 align-self-end">Filter</button>
+    </form>
+    <ul class="list-group mb-3">
+    @foreach (var row in Model.Employees)
+    { <li class="list-group-item"><a href="/Staff/Employees/@row.Id">@row.Name</a> ? @row.Number ? @row.JobTitle ? @(row.Active ? "Active" : "Inactive")</li> }
+    </ul>
+    @if (Model.Employees.Length == 0) { <p>No employees match these filters.</p> }
+    @if (employee is null)
+    {
+        var query = Context.Request.Query.Where(x => !x.Key.Equals("page", StringComparison.OrdinalIgnoreCase))
+            .ToDictionary(x => x.Key, x => x.Value.ToString(), StringComparer.OrdinalIgnoreCase);
+        <nav aria-label="Employee results" class="d-print-none">
+        @foreach (var link in new[] { ("Previous", Model.Page - 1), ("Next", Model.Page + 1) })
+        {
+            if (link.Item2 >= 1 && (link.Item2 < Model.Page || Model.Employees.Length == 25))
+            {
+                var values = new Dictionary<string,string>(query) { ["page"] = link.Item2.ToString() };
+                <a asp-action="Index" asp-all-route-data="values" class="btn btn-sm btn-outline-secondary">@link.Item1</a>
+            }
+        }</nav>
+
+    }
+    <details class="border rounded p-3 mb-3 d-print-none" open="@(employee != null)">
+        <summary>@(employee == null ? "Register employee" : "Edit employee")</summary>
+        <form asp-action="Save" asp-route-id="@employee?.Id" method="post" class="row g-2 mt-2">
+            <input type="hidden" name="Token" value="@employee?.Token" />
+            <label class="col-md-4">Full name <input name="Name" value="@employee?.Name" required maxlength="120" class="form-control" /></label>
+            <label class="col-md-4">Work email <input name="Email" type="email" value="@employee?.WorkEmail" required class="form-control" /></label>
+            <label class="col-md-4">Job title <input name="Job" value="@employee?.JobTitle" required class="form-control" /></label>
+            <label class="col-md-3">Joining date <input name="From" type="date" value="@(employee?.Joined.ToString("yyyy-MM-dd"))" required class="form-control" /></label>
+            <label class="col-md-5">Linked account <select name="Account" class="form-select">
+                <option value="">Unlinked</option>
+                @foreach (var account in accounts) { <option value="@account.Id" selected="@(employee?.UserId == account.Id)">@account.UserName</option> }
+            </select></label>
+            <label class="col-md-2">Status <select name="Active" class="form-select">
+                <option value="true" selected="@(employee?.Active != false)">Active</option><option value="false" selected="@(employee?.Active == false)">Inactive</option>
+            </select></label>
+            <div class="col-12"><button class="btn btn-primary">Save employee</button></div>
+        </form>
+    </details>
+}
+@if (employee != null)
+{
+    <h2 class="h4">@employee.Name</h2>
+    <p>@employee.Number ? @employee.JobTitle ? @employee.WorkEmail</p>
+    <h3 class="h5">Department assignments</h3>
+    @foreach (var assignment in Model.Departments)
+    { <p>@assignment.Department.Name ? @Local(assignment.FromUtc) to @(assignment.UntilUtc is DateTime end ? Local(end) : "Current")</p> }
+    @if (Model.Admin)
+    {
+        <form asp-action="Transfer" asp-route-id="@employee.Id" method="post" class="row g-2 mb-3 d-print-none">
+            <input type="hidden" name="Token" value="@employee.Token" />
+            <label class="col-md-4">New primary department <select name="Department" required class="form-select"><option value="">Choose</option>
+                @foreach (var item in choices) { <option value="@item.Id">@item.Name</option> }
+            </select></label>
+            <label class="col-md-4">Reason <input name="Reason" required maxlength="500" class="form-control" /></label>
+            <div class="col-md-3 align-self-end"><button class="btn btn-primary">Assign or transfer</button></div>
+        </form>
+    }
+}
+<h2 class="h4">Attendance</h2>
+<p>Times use Asia/Colombo. Durations use the saved clock timestamps.</p>
+<form method="get" action="@(Model.Admin ? employee != null ? $"/Staff/Employees/{employee.Id}" : "/Staff" : "/Staff/My")" class="d-flex gap-2 mb-3 d-print-none">
+    <label>Local date <input name="date" type="date" value="@Context.Request.Query["date"]" class="form-control" /></label>
+    <label>Leave status <select name="status" class="form-select"><option value="">All</option>
+        @foreach (var state in Enum.GetValues<StaffLeaveStatus>()) { <option selected="@(Context.Request.Query["status"] == state.ToString())">@state</option> }
+    </select></label>
+    <button class="btn btn-outline-primary align-self-end">Filter history</button>
+</form>
+@if (!Model.Admin)
+{
+    <div class="d-flex gap-2 mb-3 d-print-none">
+        <form asp-action="ClockIn" method="post"><button class="btn btn-primary">Clock in</button></form>
+        <form asp-action="ClockOut" method="post"><button class="btn btn-outline-primary">Clock out</button></form>
+    </div>
+}
+@if (Model.Attendance.Length == 0) { <p>No attendance records match.</p> }
+@foreach (var session in Model.Attendance)
+{
+    var row = Model.Employees.First(e => e.Id == session.EmployeeId);
+    <article class="border rounded p-2 mb-2">
+        <p>@row.Name ? @Local(session.InUtc) ? @(session.OutUtc is DateTime end ? $"{Local(end)} ? {(end-session.InUtc).TotalHours:0.00} hours" : "Clocked in")</p>
+        @foreach (var correction in ((StaffAttendanceCorrection[])ViewData["Corrections"]!).Where(c => c.AttendanceId == session.Id))
+        { <p>Correction @Local(correction.AtUtc) ? Original @Local(correction.PriorInUtc) to @(correction.PriorOutUtc is DateTime old ? Local(old) : "Open") ? Revised @Local(correction.InUtc) to @Local(correction.OutUtc)</p> }
+        @if (Model.Admin)
+        {
+            <details class="d-print-none"><summary>Correct timestamps</summary>
+            <form asp-action="Correct" asp-route-id="@session.Id" method="post">
+                <input type="hidden" name="Token" value="@row.Token" />
+                <label>Clock in <input name="Start" type="datetime-local" required /></label>
+                <label>Clock out <input name="End" type="datetime-local" required /></label>
+                <label>Reason <input name="Reason" maxlength="500" required /></label>
+                <button class="btn btn-outline-primary">Save correction</button>
+            </form></details>
+        }
+    </article>
+}
+<h2 class="h4 mt-4">Leave</h2>
+@if (Model.Admin)
+{
+    <details class="mb-3 d-print-none"><summary>Manage leave categories</summary>
+    @foreach (var type in Model.Types.Append(new StaffLeaveType { Active = true }))
+    {
+        <form asp-action="SaveType" asp-route-id="@(type.Id == Guid.Empty ? (Guid?)null : type.Id)" method="post" class="mb-2">
+            <input type="hidden" name="Token" value="@type.Token" />
+            <label>Code <input name="Code" value="@type.Code" maxlength="30" required /></label>
+            <label>Name <input name="Name" value="@type.Name" required /></label>
+            <label>Status <select name="Active"><option value="true" selected="@type.Active">Active</option><option value="false" selected="@(!type.Active)">Inactive</option></select></label>
+            <button class="btn btn-outline-primary">Save category</button>
+        </form>
+    }
+    </details>
+}
+else
+{
+    <form asp-action="RequestLeave" method="post" class="row g-2 mb-3 d-print-none">
+        <label class="col-md-3">Category <select name="Type" class="form-select" required><option value="">Choose</option>
+            @foreach (var type in Model.Types) { <option value="@type.Id">@type.Name</option> }
+        </select></label>
+        <label class="col-md-2">First day <input name="From" type="date" min="@today.ToString("yyyy-MM-dd")" required class="form-control" /></label>
+        <label class="col-md-2">Last day <input name="Through" type="date" required class="form-control" /></label>
+        <label class="col-md-3">Reason <input name="Reason" required maxlength="500" class="form-control" /></label>
+        <div class="col-md-2 align-self-end"><button class="btn btn-primary">Request leave</button></div>
+    </form>
+}
+@if (Model.Leave.Length == 0) { <p>No leave requests match.</p> }
+@foreach (var request in Model.Leave)
+{
+    <article class="border rounded p-2 mb-2">
+        <p>@Model.Employees.First(e => e.Id == request.EmployeeId).Name ? @request.Type.Name ? @request.From to @request.Through ? @request.Status</p>
+        @if (!Model.Admin || employee != null) { <p class="d-print-none">@request.Reason</p> }
+        @if (((StaffLeaveDecision[])ViewData["Decisions"]!).SingleOrDefault(d => d.RequestId == request.Id) is { } decision)
+        { <p>Decision @Local(decision.AtUtc) @if (!Model.Admin || employee != null) { <span>@decision.Reason</span> }</p> }
+        @if (request.Status == StaffLeaveStatus.Pending)
+        {
+            @if (Model.Admin)
+            {
+                var warning = ((Dictionary<Guid,string>)ViewData["Warnings"]!).GetValueOrDefault(request.Id);
+                @if (warning != null) { <p class="text-danger">@warning</p> }
+                <form asp-action="Approve" asp-route-id="@request.Id" method="post" class="d-print-none">
+                    <input type="hidden" name="Token" value="@request.Token" /><button disabled="@(warning != null)" class="btn btn-primary">Approve</button>
+                </form>
+                <form asp-action="Reject" asp-route-id="@request.Id" method="post" class="d-print-none mt-2">
+                    <input type="hidden" name="Token" value="@request.Token" />
+                    <label>Rejection reason <input name="Reason" required maxlength="500" /></label><button class="btn btn-outline-danger">Reject</button>
+                </form>
+            }
+            else
+            {
+                <details class="d-print-none"><summary>Edit request</summary>
+                <form asp-action="RequestLeave" asp-route-id="@request.Id" method="post">
+                    <input type="hidden" name="Token" value="@request.Token" />
+                    <label>Category <select name="Type" required>@foreach (var type in Model.Types) { <option value="@type.Id" selected="@(request.TypeId == type.Id)">@type.Name</option> }</select></label>
+                    <label>First day <input name="From" type="date" value="@request.From.ToString("yyyy-MM-dd")" required /></label>
+                    <label>Last day <input name="Through" type="date" value="@request.Through.ToString("yyyy-MM-dd")" required /></label>
+                    <label>Reason <input name="Reason" value="@request.Reason" required maxlength="500" /></label><button class="btn btn-outline-primary">Save</button>
+                </form></details>
+                <form asp-action="Withdraw" asp-route-id="@request.Id" method="post" class="d-print-none">
+                    <input type="hidden" name="Token" value="@request.Token" /><button class="btn btn-outline-danger">Withdraw</button>
+                </form>
+            }
+        }
+    </article>
+}
