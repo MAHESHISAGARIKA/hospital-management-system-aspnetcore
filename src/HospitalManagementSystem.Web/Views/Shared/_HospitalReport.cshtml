@@ -1,0 +1,138 @@
+@using System.Globalization
+@using HospitalManagementSystem.Web.Models.ViewModels
+@using HospitalManagementSystem.Web.Services.Appointments
+@model ReportPage
+@{
+    var report = Model.Dashboard ? null : Model.Reports.Single();
+    var filters = new Dictionary<string, string>();
+    if (Model.Filter.From is DateOnly from) filters["from"] = from.ToString("yyyy-MM-dd");
+    if (Model.Filter.To is DateOnly to) filters["to"] = to.ToString("yyyy-MM-dd");
+    foreach (var choice in report?.Choices ?? [])
+        if (!string.IsNullOrEmpty(choice.Value)) filters[choice.Name] = choice.Value;
+    var reportFilters = new Dictionary<string, string>(filters) { ["page"] = Model.Filter.Page.ToString(CultureInfo.InvariantCulture) };
+    var previous = new Dictionary<string, string>(filters) { ["page"] = (Model.Filter.Page - 1).ToString(CultureInfo.InvariantCulture) };
+    var next = new Dictionary<string, string>(filters) { ["page"] = (Model.Filter.Page + 1).ToString(CultureInfo.InvariantCulture) };
+}
+<nav class="d-print-none d-flex flex-wrap gap-3 mb-3" aria-label="Hospital reports">
+    <a asp-controller="Reports" asp-action="Index">All reports</a>
+    @foreach (var kind in Model.Navigation)
+    {
+        <a asp-controller="Reports" asp-action="Show" asp-route-kind="@kind">@kind</a>
+    }
+</nav>
+@if (Model.Reports.Count == 0)
+{
+    <p>No reporting summaries are available for your account.</p>
+}
+else
+{
+    <form method="get" class="row g-3 align-items-end mb-3 d-print-none">
+        <label class="col-sm-6 col-lg-3">From (Colombo)
+            <input type="date" name="from" value="@filters.GetValueOrDefault("from")" class="form-control" required />
+        </label>
+        <label class="col-sm-6 col-lg-3">Through (Colombo)
+            <input type="date" name="to" value="@filters.GetValueOrDefault("to")" class="form-control" required />
+        </label>
+        @foreach (var choice in report?.Choices ?? [])
+        {
+            <label class="col-sm-6 col-lg-3">@choice.Label
+                @if (choice.Options is null)
+                {
+                    <input name="@choice.Name" value="@choice.Value" class="form-control" maxlength="100" />
+                }
+                else
+                {
+                    <select name="@choice.Name" class="form-select">
+                        <option value="">All</option>
+                        @foreach (var (key, label) in choice.Options)
+                        {
+                            <option value="@key" selected="@(key == choice.Value)">@label</option>
+                        }
+                    </select>
+                }
+            </label>
+        }
+        <div class="col-auto">
+            <button class="btn btn-primary">Apply filters</button>
+            @if (Model.Dashboard)
+            {
+                <a class="btn btn-outline-secondary" asp-controller="Dashboard" asp-action="Index">Reset</a>
+            }
+            else
+            {
+                <a class="btn btn-outline-secondary" asp-controller="Reports" asp-action="Show" asp-route-kind="@report!.Kind">Reset</a>
+            }
+        </div>
+    </form>
+    <p>Reporting period @filters.GetValueOrDefault("from") through @filters.GetValueOrDefault("to") (Asia/Colombo).</p>
+    <p class="small">Generated @AppointmentService.ToColombo(Model.GeneratedUtc).ToString("yyyy-MM-dd HH:mm:ss") (Asia/Colombo).</p>
+    @if (report != null)
+    {
+        <dl class="row">
+        @foreach (var choice in report.Choices.Where(c => !string.IsNullOrEmpty(c.Value)))
+        {
+            <dt class="col-sm-3">@choice.Label</dt>
+            <dd class="col-sm-9">@(choice.Options?.FirstOrDefault(o => o.Value == choice.Value).Label ?? choice.Value)</dd>
+        }
+        </dl>
+        <p class="d-print-none d-flex gap-3">
+            <a asp-controller="Reports" asp-action="Print" asp-route-kind="@report.Kind" asp-all-route-data="reportFilters">Printable view</a>
+            <a asp-controller="Reports" asp-action="Export" asp-route-kind="@report.Kind" asp-all-route-data="filters">Download summary CSV</a>
+        </p>
+        <p class="d-print-none small">Use your browser's Print command to print or save as PDF.</p>
+    }
+    @foreach (var reportSection in Model.Reports)
+    {
+        <section class="border-top pt-3 mt-4" aria-label="@reportSection.Kind">
+            @if (Model.Dashboard) { <h2 class="h4">@reportSection.Kind</h2> }
+            <p class="text-body-secondary">@reportSection.DateMeaning</p>
+            @foreach (var group in reportSection.Groups)
+            {
+                <partial name="_ReportGroup" model="group" />
+            }
+            @if (reportSection.Table is { } table)
+            {
+                <h2 class="h5">@table.Title</h2>
+                @if (table.Rows.Count == 0)
+                {
+                    <p>No records match these filters.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead><tr>
+                                @foreach (var heading in table.Headers) { <th scope="col">@heading</th> }
+                                @if (table.PatientIds != null) { <th class="d-print-none" scope="col">Patient record</th> }
+                            </tr></thead>
+                            <tbody>
+                            @for (var index = 0; index < table.Rows.Count; index++)
+                            {
+                                <tr>
+                                @foreach (var cell in table.Rows[index]) { <td>@cell</td> }
+                                @if (table.PatientIds != null)
+                                {
+                                    <td class="d-print-none"><a asp-controller="Patients" asp-action="Details" asp-route-id="@table.PatientIds[index]">Open patient record</a></td>
+                                }
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                <nav class="d-flex gap-3 mb-4 d-print-none" aria-label="Report pages">
+                    @if (Model.Filter.Page > 1)
+                    {
+                        <a asp-controller="Reports" asp-action="Show" asp-route-kind="@reportSection.Kind" asp-all-route-data="previous">Previous</a>
+                    }
+                    <span>Page @Model.Filter.Page</span>
+                    @if (table.HasMore && Model.Filter.Page < 10000)
+                    {
+                        <a asp-controller="Reports" asp-action="Show" asp-route-kind="@reportSection.Kind" asp-all-route-data="next">Next</a>
+                    }
+                </nav>
+            }
+        </section>
+    }
+}
+

@@ -1,0 +1,42 @@
+﻿@using System.Globalization
+@using HospitalManagementSystem.Web.Models.ViewModels
+@model ReportGroup
+<h3 class="h6 mt-3">@Model.Title</h3>
+@if (Model.Values.Count == 0)
+{
+    <p class="text-body-secondary">No data for the selected filters.</p>
+}
+else if (Model.Chart)
+{
+    var max = Model.Values.Max(x => Math.Abs(x.Value));
+    <div class="table-responsive">
+    <table class="table table-sm align-middle">
+        <thead><tr><th scope="col">Category</th><th scope="col">@(Model.Unit.Length == 0 ? "Value" : Model.Unit)</th><th scope="col" class="w-50">Relative size</th></tr></thead>
+        <tbody>
+        @foreach (var point in Model.Values)
+        {
+            var display = Model.Unit == "LKR" ? point.Value.ToString("N2") : point.Value.ToString("0.###");
+            <tr>
+                <th scope="row">@point.Label</th><td>@display</td>
+                <td>@if (max > 0) { <meter class="w-100" aria-label="@point.Label" min="0" max="@max.ToString(CultureInfo.InvariantCulture)" value="@Math.Abs(point.Value).ToString(CultureInfo.InvariantCulture)"></meter> }</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}
+else
+{
+    <dl class="row g-3">
+    @foreach (var value in Model.Values)
+    {
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+            <div class="card h-100 p-3">
+                <dt class="small fw-normal">@value.Label</dt>
+                <dd class="h5 mb-0">@(Model.Unit == "LKR" ? "LKR " + value.Value.ToString("N2") : value.Value.ToString("0.###"))</dd>
+            </div>
+        </div>
+    }
+    </dl>
+}
+

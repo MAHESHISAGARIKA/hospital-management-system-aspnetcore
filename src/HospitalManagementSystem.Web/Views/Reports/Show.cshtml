@@ -1,0 +1,8 @@
+﻿@model HospitalManagementSystem.Web.Models.ViewModels.ReportPage
+@{
+    if (ViewData["ReportPrint"] is true) Layout = "_ReportPrintLayout";
+    ViewData["Title"] = Model.Reports[0].Kind + " report";
+}
+<h1>@ViewData["Title"]</h1>
+<partial name="_HospitalReport" model="Model" />
+

@@ -1,37 +1,16 @@
-@model HospitalManagementSystem.Web.Models.ViewModels.DashboardViewModel
+@model HospitalManagementSystem.Web.Models.ViewModels.ReportPage
 @{
     ViewData["Title"] = "Dashboard";
 }
-
-<h1 class="h3 mb-3">Hospital Dashboard</h1>
-
+<h1>Hospital Dashboard</h1>
 @if (TempData["StatusMessage"] is string statusMessage)
 {
     <div class="alert alert-success">@statusMessage</div>
 }
-
-<p>Signed in as <strong>@Model.Email</strong></p>
-<p>Roles: @string.Join(", ", Model.Roles)</p>
-
-<div class="row g-3">
-    @if (User.IsInRole("Administrator"))
-    {
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h2 class="h5">Administration</h2>
-                    <p>Manage staff accounts and role assignments.</p>
-                    <a asp-controller="Users" asp-action="Index" class="btn btn-outline-primary">Manage users</a>
-                </div>
-            </div>
-        </div>
-    }
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h2 class="h5">Future hospital modules</h2>
-                <p>Patient, appointment and clinical modules are not implemented in this stage.</p>
-            </div>
-        </div>
-    </div>
-</div>
+<p class="d-print-none">Signed in as <strong>@ViewData["AccountEmail"]</strong></p>
+<p class="d-print-none">Roles: @ViewData["AccountRoles"]</p>
+@if (User.IsInRole("Administrator"))
+{
+    <a asp-controller="Users" asp-action="Index" class="btn btn-outline-primary mb-3 d-print-none">Manage users</a>
+}
+<partial name="_HospitalReport" model="Model" />

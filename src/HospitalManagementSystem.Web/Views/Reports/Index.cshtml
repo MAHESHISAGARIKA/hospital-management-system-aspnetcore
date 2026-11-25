@@ -1,0 +1,19 @@
+﻿@model HospitalManagementSystem.Web.Models.ViewModels.ReportPage
+@{
+    ViewData["Title"] = "Reports";
+}
+<h1>Hospital reports</h1>
+@if (Model.Navigation.Count == 0)
+{
+    <p>No reports are available for your account.</p>
+}
+else
+{
+    <div class="list-group">
+    @foreach (var report in Model.Navigation)
+    {
+        <a class="list-group-item list-group-item-action" asp-controller="Reports" asp-action="Show" asp-route-kind="@report">@report</a>
+    }
+    </div>
+}
+

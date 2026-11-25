@@ -179,3 +179,7 @@ See [Inpatient and Outpatient Management](docs/inpatient-outpatient-management.m
 ## Staff management
 
 Stage 12 adds employee profiles, department history, attendance, leave and staff reporting. See [staff management](docs/staff-management.md) for the migration and manual verification steps.
+
+## Hospital reports and dashboard
+
+The dashboard and role-scoped reports reuse the existing hospital records. See [Hospital reports and dashboard](docs/hospital-reports-dashboard.md) for metrics, access, printing and testing.
