@@ -105,6 +105,7 @@ public sealed class StaffService(HospitalDbContext db, IAuditLogService audit, T
         var session = await db.Set<StaffAttendance>().FindAsync([id], ct) ?? throw new StaffFault("Session was not found.");
         var employee = await EmployeeAsync(session.EmployeeId, ct);
         Check(token, employee.Token);
+        if (session.OutUtc is null) throw new StaffFault("Clock out before correcting this session.");
         if (end <= start || end > Now || await db.Set<StaffAttendance>().AnyAsync(x => x.EmployeeId == employee.Id && x.Id != id &&
             x.InUtc < end && (x.OutUtc == null || x.OutUtc > start), ct))
             throw new StaffFault("Enter a completed interval that does not overlap another session.");
