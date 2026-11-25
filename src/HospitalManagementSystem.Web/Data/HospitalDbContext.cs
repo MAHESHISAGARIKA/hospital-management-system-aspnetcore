@@ -58,6 +58,7 @@ public sealed class HospitalDbContext(DbContextOptions<HospitalDbContext> option
         PharmacyModelConfiguration.Configure(modelBuilder);
         BillingModelConfiguration.Configure(modelBuilder);
         InpatientModelConfiguration.Configure(modelBuilder);
+        StaffConfiguration.Configure(modelBuilder);
 
         modelBuilder.Entity<ApplicationUser>(entity =>
         {
