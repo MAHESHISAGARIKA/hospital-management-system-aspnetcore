@@ -69,3 +69,7 @@ Future tests should include unit tests for domain rules, EF Core integration tes
 | Leave and clinical safeguards | Leave types and request history, administrator decisions and checks against known clinical commitments |
 | Staff reporting | Dashboard totals and staff, attendance and leave views |
 | Payroll, leave entitlements and schedules | Deferred until the hospital defines the applicable policies |
+
+## Stage 13 Hospital reports and dashboard
+
+Patient, appointment, billing, pharmacy, laboratory and staff reports are available with role-scoped dashboard sections. Inpatient and outpatient reports use Stage 11 records. The [reporting guide](hospital-reports-dashboard.md) documents query definitions, safeguards and verification limits.
