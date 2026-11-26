@@ -6,6 +6,8 @@ using HospitalManagementSystem.Web.Services.Appointments;
 using HospitalManagementSystem.Web.Services.Clinical;
 using HospitalManagementSystem.Web.Services.Doctors;
 using HospitalManagementSystem.Web.Services.Patients;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +16,31 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddHealthChecks().AddCheck<HospitalDatabaseHealthCheck>("hospital-database", tags: ["ready"]);
+
+var keyDirectory = builder.Configuration["DataProtection:KeyDirectory"];
+if (!string.IsNullOrWhiteSpace(keyDirectory))
+{
+    if (!Path.IsPathFullyQualified(keyDirectory) || !Directory.Exists(keyDirectory))
+        throw new InvalidOperationException("Configure DataProtection:KeyDirectory as an existing absolute directory.");
+    builder.Services.AddDataProtection().SetApplicationName("HospitalManagementSystem")
+        .PersistKeysToFileSystem(new DirectoryInfo(keyDirectory));
+}
+
+var proxyAddress = builder.Configuration["Hosting:TrustedProxy"];
+if (!string.IsNullOrWhiteSpace(proxyAddress))
+{
+    if (!System.Net.IPAddress.TryParse(proxyAddress, out var trustedProxy))
+        throw new InvalidOperationException("Hosting:TrustedProxy must be the immediate reverse proxy IP address.");
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+        options.KnownProxies.Add(trustedProxy);
+        options.ForwardLimit = 1;
+    });
+}
 
 var hospitalDatabaseConnection = builder.Configuration.GetConnectionString("HospitalDatabase");
 
@@ -108,6 +135,7 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IAppointmentNumberGenerator, AppointmentNumberGenerator>();
 
 var app = builder.Build();
+if (!string.IsNullOrWhiteSpace(proxyAddress)) app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -127,7 +155,14 @@ using (var scope = app.Services.CreateScope())
     if (!app.Environment.IsEnvironment("Testing"))
     {
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-        await RoleInitializer.InitializeAsync(roleManager);
+        try
+        {
+            await RoleInitializer.InitializeAsync(roleManager);
+        }
+        catch (Npgsql.NpgsqlException) when (!app.Environment.IsDevelopment())
+        {
+            throw new InvalidOperationException("Hospital role initialization could not reach the expected database schema. Check connectivity, permissions and migrations.");
+        }
     }
 
     if (app.Environment.IsDevelopment() &&
@@ -200,6 +235,15 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("First Administrator account created successfully.");
     }
 }
+
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false
+}).AllowAnonymous();
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).AllowAnonymous();
 
 app.MapStaticAssets();
 

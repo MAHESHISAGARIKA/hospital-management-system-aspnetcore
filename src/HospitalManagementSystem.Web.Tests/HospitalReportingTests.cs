@@ -279,12 +279,9 @@ public sealed class HospitalReportingTests(AuthenticationTestApplication factory
     [PostgreSqlFact]
     public async Task NpgsqlExecutesAllReportAggregatesAgainstPreparedDisposableSchema()
     {
-        var connection = new Npgsql.NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("HOSPITAL_APPOINTMENT_TEST_CONNECTION"));
-        if (string.Equals(connection.Database, "hospital_management_dev", StringComparison.OrdinalIgnoreCase) ||
-            connection.Database?.Contains("test", StringComparison.OrdinalIgnoreCase) != true)
-            throw new InvalidOperationException("Reporting integration tests require an explicitly disposable test database.");
+        var connectionString = await PostgreSqlTestDatabase.VerifiedConnectionStringAsync();
 
-        await using var db = new HospitalDbContext(new DbContextOptionsBuilder<HospitalDbContext>().UseNpgsql(connection.ConnectionString).Options);
+        await using var db = new HospitalDbContext(new DbContextOptionsBuilder<HospitalDbContext>().UseNpgsql(connectionString).Options);
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
         await using var transaction = await db.Database.BeginTransactionAsync();
         var actor = new ApplicationUser { Id = Guid.NewGuid(), UserName = $"fictional-{Guid.NewGuid():N}", IsEnabled = true };
@@ -327,4 +324,3 @@ public sealed class HospitalReportingTests(AuthenticationTestApplication factory
         return (client, user.Id);
     }
 }
-

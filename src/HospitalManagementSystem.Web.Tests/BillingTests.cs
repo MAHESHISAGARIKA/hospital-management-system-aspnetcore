@@ -256,11 +256,8 @@ public sealed class BillingTests(AuthenticationTestApplication factory) : IClass
     [PostgreSqlFact]
     public async Task PostgreSqlSerializesBillingPayments()
     {
-        var connection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("HOSPITAL_APPOINTMENT_TEST_CONNECTION"));
-        if (string.Equals(connection.Database, "hospital_management_dev", StringComparison.OrdinalIgnoreCase) ||
-            connection.Database?.Contains("test", StringComparison.OrdinalIgnoreCase) != true)
-            throw new InvalidOperationException("Billing tests require an explicitly disposable database.");
-        var options = new DbContextOptionsBuilder<HospitalDbContext>().UseNpgsql(connection.ConnectionString).Options;
+        var connectionString = await PostgreSqlTestDatabase.VerifiedConnectionStringAsync();
+        var options = new DbContextOptionsBuilder<HospitalDbContext>().UseNpgsql(connectionString).Options;
         await using var db = new HospitalDbContext(options);
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
         var billing = CreateService(db);

@@ -235,11 +235,8 @@ public sealed class LaboratoryTests(AuthenticationTestApplication factory) : ICl
     [PostgreSqlFact]
     public async Task PostgreSqlPreservesLaboratoryHistory()
     {
-        var connection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("HOSPITAL_APPOINTMENT_TEST_CONNECTION"));
-        if (string.Equals(connection.Database, "hospital_management_dev", StringComparison.OrdinalIgnoreCase) ||
-            connection.Database?.Contains("test", StringComparison.OrdinalIgnoreCase) != true)
-            throw new InvalidOperationException("Laboratory tests require a disposable test database.");
-        var options = new DbContextOptionsBuilder<HospitalDbContext>().UseNpgsql(connection.ConnectionString).Options;
+        var connectionString = await PostgreSqlTestDatabase.VerifiedConnectionStringAsync();
+        var options = new DbContextOptionsBuilder<HospitalDbContext>().UseNpgsql(connectionString).Options;
         await using var db = new HospitalDbContext(options);
         Assert.Empty(await db.Database.GetPendingMigrationsAsync());
         await using var transaction = await db.Database.BeginTransactionAsync();
