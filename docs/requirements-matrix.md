@@ -73,3 +73,29 @@ Future tests should include unit tests for domain rules, EF Core integration tes
 ## Stage 13 Hospital reports and dashboard
 
 Patient, appointment, billing, pharmacy, laboratory and staff reports are available with role-scoped dashboard sections. Inpatient and outpatient reports use Stage 11 records. The [reporting guide](hospital-reports-dashboard.md) documents query definitions, safeguards and verification limits.
+
+## Stage 14 acceptance evidence
+
+Verification below refers to automated coverage unless a manual run is listed. The requirements checklist and prior module sections retain the original scope.
+
+| Requirement | Status | Evidence and remaining manual check |
+| --- | --- | --- |
+| Identity and role management | Implemented and verified | `AccountController`, `UsersController`, `AuthenticationTests`; confirm production cookie and password provisioning. |
+| Patient profile, archive and documents | Implemented and verified | `PatientsController`, `PatientManagementTests`; confirm deployed file storage permissions. |
+| Doctor and schedule management | Implemented and verified | `DoctorsController`, `DoctorManagementTests`; confirm schedules with a linked account in staging. |
+| Appointment booking and lifecycle | Implemented and verified | `AppointmentsController`, `AppointmentManagementTests`; concurrent PostgreSQL protection is implemented but unverified. |
+| EMR scope and amendment history | Implemented and verified | `ClinicalRecordService`, `ClinicalRecordTests`; PostgreSQL finalization trigger remains unverified. |
+| Laboratory order, sample and result workflow | Implemented and verified | `LaboratoryController`, `LaboratoryTests`; PostgreSQL history enforcement remains unverified. |
+| Pharmacy inventory, dispensing and ledger | Implemented and verified | `PharmacyService`, `PharmacyTests`; PostgreSQL concurrent stock enforcement remains unverified. |
+| Billing, payments, reversals and balances | Implemented and verified | `BillingController`, `BillingTests`; PostgreSQL races and precision need the isolated run. |
+| Inpatient and outpatient workflows | Implemented and verified | `InpatientsController`, `OutpatientsController`, `InpatientTests`; PostgreSQL allocation and transfer tests remain unverified. |
+| Staff profiles, attendance and leave | Implemented and verified | `StaffController`, `AuthenticatedStaffTests`; cross-module approval races and live staff constraints remain unverified. |
+| Six reports and role dashboard | Implemented and verified | `ReportsController`, `HospitalReportingTests`; PostgreSQL aggregation and manual print preview remain unverified. |
+| Session timeout and request security | Implemented and verified | `Program.cs`, `AuthenticationTests`, `AuthenticatedStaffTests`; verify HTTPS and live session expiry. |
+| Audit logging | Implemented and verified | `AuditLogService`, report and staff test coverage; confirm deployed retention and permissions. |
+| Responsive interface | Implemented but unverified | Bootstrap shared layout; exercise narrow screens and print in the acceptance checklist. |
+| Backup and restore | Partially implemented | Operator procedures exist. The restore drill and recovery timing are unverified. |
+| Performance testing | Implemented but unverified | Pagination and query review exist. No production-scale benchmark has been run. |
+| Production deployment | Deferred | A target host, secure provisioning, a verified backup, and a staging deployment are required. |
+
+See the [release gates](release-readiness.md) for current acceptance status.

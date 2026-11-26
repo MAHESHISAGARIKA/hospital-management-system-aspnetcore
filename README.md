@@ -39,18 +39,21 @@ This project aims to provide a centralized platform for managing hospital operat
 
 ### Prerequisites
 
-- .NET 10 SDK
-- Git
+- .NET 10 SDK and Git
+- An already migrated PostgreSQL 18 database for local use
+- A dedicated, fictional-only database and separate document storage for demonstrations
 
-### Run Locally
+### Run locally
 
-```bash
+Configure `ConnectionStrings:HospitalDatabase` for the intended local database using ASP.NET Core User Secrets or the process-scoped `ConnectionStrings__HospitalDatabase` setting. Supply the value privately. For patient uploads, also configure `PatientDocuments:StorageRoot` outside the web root. Confirm the database identity before signing in or writing records.
+
+```powershell
 dotnet restore
-dotnet build
+dotnet build HospitalManagementSystem.slnx
 dotnet run --project src/HospitalManagementSystem.Web
 ```
 
-Open the URL displayed in the terminal.
+Open the HTTPS address printed in the terminal, then visit `/Account/Login`. Check `/health/live` and `/health/ready`. For an unprepared schema, see the separate [deployment procedure](docs/deployment-guide.md#build-and-database-preparation). For a supervisor session, follow the [demonstration guide](docs/supervisor-demo.md).
 
 ## Development Status
 
@@ -66,23 +69,9 @@ Open the URL displayed in the terminal.
 - Stage 10: Effective-dated LKR prices, patient invoices, recorded payments, reversals and printable receipts.
 - Stage 11: OPD worklists using existing appointments, inpatient registration and approval, ward and bed management, scoped care and discharge.
 
-Staffing and hospital-wide reporting remain planned.
+Stages 12 and 13 add Staff Management and Hospital Reports. Stage 14 adds release preparation, with verification tracked in the [release gates](docs/release-readiness.md).
 
 ## Authentication setup
-
-Configure the local PostgreSQL connection using ASP.NET Core User Secrets:
-
-```bash
-dotnet user-secrets set "ConnectionStrings:HospitalDatabase" "Host=localhost;Database=hospital_management_dev;Username=hospital_app_user;Password=<password>" --project src/HospitalManagementSystem.Web
-```
-
-Apply migrations manually only after review. For Stage 6 verification, target a disposable database. Set the intended connection in the ConnectionStrings__HospitalDatabase environment variable first. The Testing environment uses that connection and skips application role initialization during EF tooling.
-
-```bash
-dotnet ef database update AddInpatientOutpatientManagement --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
-```
-
-`AddAppointmentManagement` enables PostgreSQL's `btree_gist` extension and adds a GiST exclusion constraint. The migration account needs permission to create the extension; a DBA may install it beforehand with `CREATE EXTENSION btree_gist;`. Do not grant the application login superuser privileges just for this migration.
 
 The initial appointment policy uses Asia/Colombo display/input time, UTC database instants, 15-minute start increments and durations of 15, 30, 45 or 60 minutes. Appointments use end-exclusive `[start,end)` ranges. Scheduled and CheckedIn appointments block overlaps; Cancelled and Missed appointments release their slots. Completed records remain historical and are not rescheduled.
 
@@ -100,28 +89,15 @@ No Administrator account or password is seeded automatically.
 
 ## Run and test
 
-```bash
-dotnet restore
-dotnet build
-dotnet run --project src/HospitalManagementSystem.Web
-dotnet test HospitalManagementSystem.slnx
-```
-
-Open `/Account/Login`. `/Dashboard` requires authentication and `/Users` requires the Administrator role.
-
-The standard suite uses isolated EF Core InMemory databases. To run the opt-in PostgreSQL integration test, provision a disposable PostgreSQL 18 database with a name containing `test`, and configure its connection securely in `HOSPITAL_APPOINTMENT_TEST_CONNECTION`. Never use `hospital_management_dev` or a shared database. The test inserts and removes fictional fixtures and expects the full migration chain to be applied already.
-
-In PowerShell, after configuring that variable, confirm the target and run:
+Run the normal suites with PostgreSQL integration opt-in disabled.
 
 ```powershell
-$env:ConnectionStrings__HospitalDatabase = $env:HOSPITAL_APPOINTMENT_TEST_CONNECTION
-dotnet ef database update AddInpatientOutpatientManagement --project src/HospitalManagementSystem.Web --startup-project src/HospitalManagementSystem.Web --context HospitalDbContext -- --environment Testing
-dotnet test HospitalManagementSystem.slnx --filter "FullyQualifiedName~PostgreSqlAppointmentIntegrationTests|FullyQualifiedName~PostgreSqlRejectsRewritingFinalizedClinicalHistory|FullyQualifiedName~PostgreSqlPreservesLaboratoryHistory|FullyQualifiedName~PostgreSqlSerializesPharmacyStockAndPreservesLedger|FullyQualifiedName~PostgreSqlSerializesBillingPayments|FullyQualifiedName~PostgreSqlPreventsConcurrentInpatientBedAllocation"
-Remove-Item Env:ConnectionStrings__HospitalDatabase
-Remove-Item Env:HOSPITAL_APPOINTMENT_TEST_CONNECTION
+Remove-Item Env:HOSPITAL_TEST_POSTGRES_OPT_IN,Env:HOSPITAL_APPOINTMENT_TEST_CONNECTION -ErrorAction SilentlyContinue
+dotnet test HospitalManagementSystem.slnx -c Debug
+dotnet test HospitalManagementSystem.slnx -c Release
 ```
 
-The PostgreSQL tests cover EMR finalized-record protection and adjacent and conflicting bookings, concurrent identical retries, opposite-direction rescheduling, database constraint violations, and transaction rollback. The normal suite skips them when the test connection is absent. Browser-delivered password reset email remains unimplemented until an email provider is configured.
+The normal suite uses isolated EF Core InMemory fixtures. The seven live PostgreSQL cases require the separate [guarded workflow](docs/final-testing.md#isolated-postgresql). The [release gates](docs/release-readiness.md) record what has been verified. Browser-delivered password reset email requires an email provider.
 
 ### Appointment browser checklist
 
@@ -183,3 +159,7 @@ Stage 12 adds employee profiles, department history, attendance, leave and staff
 ## Hospital reports and dashboard
 
 The dashboard and role-scoped reports reuse the existing hospital records. See [Hospital reports and dashboard](docs/hospital-reports-dashboard.md) for metrics, access, printing and testing.
+
+## Final verification and deployment
+
+See the [final testing guide](docs/final-testing.md), [security review](docs/security-review.md), [backup and restore procedure](docs/backup-restore.md), [deployment guide](docs/deployment-guide.md), [user guide](docs/user-guide.md), and [release readiness gates](docs/release-readiness.md).

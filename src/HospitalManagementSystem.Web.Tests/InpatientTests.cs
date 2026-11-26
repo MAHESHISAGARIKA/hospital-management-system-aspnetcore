@@ -265,12 +265,9 @@ public sealed class InpatientTests(AuthenticationTestApplication factory) : ICla
     [PostgreSqlFact]
     public async Task PostgreSqlPreventsConcurrentInpatientBedAllocation()
     {
-        var connection = new NpgsqlConnectionStringBuilder(Environment.GetEnvironmentVariable("HOSPITAL_APPOINTMENT_TEST_CONNECTION"));
-        if (string.Equals(connection.Database, "hospital_management_dev", StringComparison.OrdinalIgnoreCase) ||
-            connection.Database?.Contains("test", StringComparison.OrdinalIgnoreCase) != true)
-            throw new InvalidOperationException("Inpatient tests need an explicitly disposable database.");
+        var connectionString = await PostgreSqlTestDatabase.VerifiedConnectionStringAsync();
         var registrations = new ServiceCollection();
-        registrations.AddLogging().AddDbContext<HospitalDbContext>(options => options.UseNpgsql(connection.ConnectionString));
+        registrations.AddLogging().AddDbContext<HospitalDbContext>(options => options.UseNpgsql(connectionString));
         registrations.AddIdentityCore<ApplicationUser>().AddRoles<IdentityRole<Guid>>().AddEntityFrameworkStores<HospitalDbContext>();
         registrations.AddSingleton(TimeProvider.System);
         registrations.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();

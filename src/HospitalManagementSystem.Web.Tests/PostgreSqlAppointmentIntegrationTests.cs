@@ -15,16 +15,7 @@ public sealed class PostgreSqlAppointmentIntegrationTests
     [PostgreSqlFact]
     public async Task DatabaseEnforcesBookingAndReschedulingConcurrency()
     {
-        var connectionString = Environment.GetEnvironmentVariable("HOSPITAL_APPOINTMENT_TEST_CONNECTION");
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("The PostgreSQL appointment test connection was not configured.");
-
-        var connectionInfo = new NpgsqlConnectionStringBuilder(connectionString);
-        if (string.Equals(connectionInfo.Database, "hospital_management_dev", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Integration tests refuse to connect to hospital_management_dev.");
-        if (string.IsNullOrWhiteSpace(connectionInfo.Database) || !connectionInfo.Database.Contains("test", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("The appointment integration database name must clearly identify a test database.");
-
+        var connectionString = await PostgreSqlTestDatabase.VerifiedConnectionStringAsync();
         var options = new DbContextOptionsBuilder<HospitalDbContext>()
             .UseNpgsql(connectionString)
             .Options;
@@ -237,14 +228,5 @@ public sealed class PostgreSqlAppointmentIntegrationTests
     {
         public Task WriteAsync(string action, Guid? actorUserId, Guid? targetUserId, string? details, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
-    }
-}
-
-public sealed class PostgreSqlFactAttribute : FactAttribute
-{
-    public PostgreSqlFactAttribute()
-    {
-        if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("HOSPITAL_APPOINTMENT_TEST_CONNECTION")))
-            Skip = "Set HOSPITAL_APPOINTMENT_TEST_CONNECTION to a separate migrated PostgreSQL test database to run PostgreSQL integration tests.";
     }
 }

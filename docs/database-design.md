@@ -384,3 +384,7 @@ Employee profiles can link to one existing Identity user. Department assignments
 ## Stage 13 reporting
 
 Reporting projects existing domain records into summaries and paginated detail views. It adds no reporting tables, caches or schema migration. See the [report definitions](hospital-reports-dashboard.md) for source tables and event timestamps.
+
+## Stage 14 review
+
+The migration chain ends at `AddStaffManagement`. Reports and health checks query existing tables. Startup does not run EF migrations. The approved operator applies reviewed SQL and verifies `__EFMigrationsHistory` before runtime readiness. See [backup and restore](backup-restore.md) before upgrading or recovering a database. PostgreSQL exclusion constraints and history triggers depend on the migration SQL and should be verified on the actual provider.
