@@ -1,0 +1,64 @@
+@{
+    var admin = User.IsInRole("Administrator");
+    var reception = User.IsInRole("Receptionist");
+    var doctor = User.IsInRole("Doctor");
+    var nurse = User.IsInRole("Nurse");
+    var current = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var sections = new[]
+    {
+        (Title: "Workspace", Links: new[] {
+            ("Dashboard", "Index", "Dashboard", "?", true),
+            ("Reports", "Index", "Reports", "?", true)
+        }),
+        (Title: "Patient care", Links: new[] {
+            ("Patients", "Index", "Patients", "?", admin || reception || doctor),
+            ("Appointments", "Index", "Appointments", "?", admin || reception || doctor),
+            ("Doctors", "Index", "Doctors", "?", admin || doctor),
+            ("MedicalRecords", "Index", "Medical records", "?", doctor),
+            ("Outpatients", "Today", "Outpatients (OPD)", "?", doctor || reception),
+            ("Inpatients", "Index", "Inpatients", "?", doctor || reception || nurse)
+        }),
+        (Title: "Operations", Links: new[] {
+            ("Laboratory", "Index", "Laboratory", "?", doctor || User.IsInRole("LaboratoryStaff")),
+            ("Pharmacy", "Index", "Pharmacy", "?", User.IsInRole("Pharmacist")),
+            ("Billing", "Index", "Billing", "?", User.IsInRole("Accountant")),
+            ("Inpatients", "Wards", "Wards and beds", "?", admin)
+        }),
+        (Title: "Administration", Links: new[] {
+            ("Users", "Index", "Users and roles", "?", admin),
+            ("Departments", "Index", "Departments", "?", admin),
+            ("Laboratory", "Tests", "Lab catalog", "?", admin),
+            ("Pharmacy", "Medicines", "Medicine catalog", "?", admin)
+        })
+    };
+}
+<nav class="hms-navigation" aria-label="Main navigation">
+    @foreach (var navSection in sections.Where(s => s.Links.Any(link => link.Item5)))
+    {
+        <h2 class="hms-nav-heading">@navSection.Title</h2>
+        <ul class="list-unstyled">
+        @foreach (var (controller, route, label, icon, visible) in navSection.Links.Where(link => link.Item5))
+        {
+            var selectAction = controller is "Laboratory" or "Pharmacy" or "Inpatients";
+            var active = current == controller && (!selectAction || (route == "Index"
+                ? action is not ("Tests" or "Medicines" or "Wards" or "Ward" or "SaveWard" or "Beds" or "Bed" or "SaveBed")
+                : action == route || (route == "Wards" && action is ("Ward" or "SaveWard" or "Beds" or "Bed" or "SaveBed"))));
+            <li><a class="hms-nav-link @(active ? "is-active" : "")" aria-current="@(active ? "location" : null)"
+                   asp-controller="@controller" asp-action="@route"><span class="hms-nav-icon" aria-hidden="true">@icon</span>@label</a></li>
+        }
+        </ul>
+    }
+    <ul class="list-unstyled">
+    @if (admin)
+    {
+        <li><a class="hms-nav-link @(current == "Staff" ? "is-active" : "")" aria-current="@(current == "Staff" ? "location" : null)" href="/Staff">
+            <span class="hms-nav-icon" aria-hidden="true">?</span>Staff</a></li>
+    }
+    else
+    {
+        @await Component.InvokeAsync("StaffNavigation")
+    }
+        <li><a class="hms-nav-link" asp-controller="Home" asp-action="Index"><span class="hms-nav-icon" aria-hidden="true">?</span>Home</a></li>
+    </ul>
+</nav>

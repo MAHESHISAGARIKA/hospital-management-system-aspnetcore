@@ -2,7 +2,7 @@
 @{ ViewData["Title"] = "Dispensing history"; }
 <h1 class="h3">Dispensing history</h1>
 <partial name="_Links" /><partial name="_Messages" />
-<form method="get" asp-action="History" class="row g-2 mb-3 d-print-none">
+<form method="get" asp-action="History" class="hms-filter row g-2 mb-3 d-print-none">
     <label class="col-md-3">Receipt number <input name="Search" value="@Model.Filter.Search" class="form-control" /></label>
     <label class="col-md-2">From <input type="date" name="From" value="@(Model.Filter.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
     <label class="col-md-2">To <input type="date" name="To" value="@(Model.Filter.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
@@ -12,7 +12,7 @@
     <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
 </form>
 <partial name="_Print" />
-@if (Model.Rows.Count == 0) { <p>No dispensing records match these filters.</p> }
+@if (Model.Rows.Count == 0) { <p class="hms-empty">No dispensing records match these filters.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Receipt</th><th>Prescription</th><th>Dispensed (Asia/Colombo)</th><th>Status</th></tr></thead><tbody>

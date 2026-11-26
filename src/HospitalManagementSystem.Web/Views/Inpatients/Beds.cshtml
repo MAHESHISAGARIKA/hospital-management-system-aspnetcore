@@ -2,7 +2,7 @@
 @{ ViewData["Title"] = "Bed availability"; var wards = (IReadOnlyList<WardCensus>)ViewData["Wards"]!; }
 <h1 class="h3">Bed availability</h1><partial name="_Navigation" />
 @if (User.IsInRole("Administrator")) { <a asp-action="Bed" class="btn btn-primary mb-3 d-print-none">Register bed</a> }
-<form asp-action="Beds" method="get" class="row g-2 mb-3 d-print-none">
+<form asp-action="Beds" method="get" class="hms-filter row g-2 mb-3 d-print-none">
     <label class="col-md-3">Bed or ward code <input name="Search" value="@Model.Filter.Search" class="form-control" /></label>
     <label class="col-md-3">Ward <select name="WardId" class="form-select"><option value="">All</option>
     @foreach (var ward in wards) { <option value="@ward.Id" selected="@(Model.Filter.WardId == ward.Id)">@ward.Code</option> }</select></label>
@@ -11,7 +11,7 @@
     <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
 </form>
 <partial name="_Print" />
-@if (Model.Rows.Count == 0) { <p>No beds match these filters.</p> }
+@if (Model.Rows.Count == 0) { <p class="hms-empty">No beds match these filters.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Ward</th><th>Bed</th><th>Occupancy</th><th>Condition</th></tr></thead><tbody>

@@ -13,12 +13,12 @@
 </div>
 <div class="row g-3">
     <section class="col-lg-6"><h2 class="h5">Recent invoices</h2>
-    @if (Model.Recent.Count == 0) { <p>No invoices recorded.</p> }
+    @if (Model.Recent.Count == 0) { <p class="hms-empty">No invoices recorded.</p> }
     @foreach (var item in Model.Recent)
     { <p><a asp-action="Details" asp-route-id="@item.Id">@(item.Number ?? "Draft")</a> ? @item.Status ? LKR @item.Total.ToString("N2")</p> }
     </section>
     <section class="col-lg-6"><h2 class="h5">Recent payments</h2>
-    @if (Model.Payments.Count == 0) { <p>No payments recorded.</p> }
+    @if (Model.Payments.Count == 0) { <p class="hms-empty">No payments recorded.</p> }
     @foreach (var item in Model.Payments)
     { <p><a asp-action="Receipt" asp-route-id="@item.Id">@item.ReceiptNumber</a> ? LKR @item.Amount.ToString("N2") @(item.Reversal != null ? "? Reversed" : "")</p> }
     </section>

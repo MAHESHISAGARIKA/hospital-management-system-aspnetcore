@@ -7,7 +7,7 @@
 <partial name="_Links" />
 @if (!Model.Id.HasValue && !input.ReplacesId.HasValue)
 {
-    <form asp-action="Edit" method="get" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+    <form asp-action="Edit" method="get" class="hms-filter d-flex flex-wrap align-items-end gap-2 mb-3">
         <label>Patient <select name="patientId" required class="form-select">
             <option value="">Select a patient</option>
             @foreach (var patient in Model.Patients)
@@ -27,7 +27,7 @@
         <input asp-for="Input.PatientId" type="hidden" />
         <input asp-for="Input.ReplacesId" type="hidden" />
         <label class="mb-3">Service date (Asia/Colombo) <input asp-for="Input.ServiceDate" type="date" required class="form-control" /></label>
-        @if (Model.Services.Count == 0) { <p>No active billable services are available.</p> }
+        @if (Model.Services.Count == 0) { <p class="hms-empty">No active billable services are available.</p> }
         else
         {
             <div data-invoice-lines>

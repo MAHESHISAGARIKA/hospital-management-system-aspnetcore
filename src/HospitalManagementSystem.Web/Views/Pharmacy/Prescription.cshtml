@@ -8,7 +8,7 @@
 <partial name="_Links" /><partial name="_Messages" />
 <p>@Model.Prescription.PatientName ? @Model.Prescription.PatientNumber ? Dr. @Model.Prescription.Doctor</p>
 <p class="text-break">@Model.Prescription.Id <span class="badge text-bg-light border">@Model.Prescription.Status</span></p>
-@if (!usable) { <p class="alert alert-light border">No lines are currently available to dispense. Review the prescribed quantity and unit, eligible stock, or revision history.</p> }
+@if (!usable) { <p class="hms-empty">No lines are currently available to dispense. Review the prescribed quantity and unit, eligible stock, or revision history.</p> }
 <form asp-action="Dispense" asp-route-id="@Model.Prescription.Id" method="post" data-pharmacy-form data-confirm="Confirm the patient and selected batches before dispensing.">
     <input type="hidden" name="RequestKey" value="@Model.RequestKey" />
     @foreach (var choice in Model.Items)
@@ -49,7 +49,7 @@
     }
 </form>
 <section class="mt-4"><h2 class="h5">Dispensing history</h2>
-    @if (Model.History.Count == 0) { <p>No dispensing recorded for this revision.</p> }
+    @if (Model.History.Count == 0) { <p class="hms-empty">No dispensing recorded for this revision.</p> }
     @foreach (var receipt in Model.History)
     {
         <div class="border-bottom py-2"><a asp-action="Receipt" asp-route-id="@receipt.Id">@receipt.Number</a> ? @(receipt.IsPartial ? "Partial" : "Complete")</div>

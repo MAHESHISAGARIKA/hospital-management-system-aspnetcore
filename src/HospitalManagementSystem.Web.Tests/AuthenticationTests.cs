@@ -233,9 +233,62 @@ public sealed class AuthenticationTests : IClassFixture<AuthenticationTestApplic
         Assert.Contains(HospitalRoles.Accountant, HospitalRoles.All);
     }
 
-    private async Task<Guid> CreateUserAsync(string email, string password, string role, bool requirePasswordChange = false)
+    [Theory]
+    [InlineData(HospitalRoles.Administrator, "/Users", "/Billing")]
+    [InlineData(HospitalRoles.Doctor, "/MedicalRecords", "/Users")]
+    [InlineData(HospitalRoles.Nurse, "/Inpatients", "/Appointments")]
+    [InlineData(HospitalRoles.Receptionist, "/Appointments", "/Billing")]
+    [InlineData(HospitalRoles.LaboratoryStaff, "/Laboratory", "/Users")]
+    [InlineData(HospitalRoles.Pharmacist, "/Pharmacy", "/Billing")]
+    [InlineData(HospitalRoles.Accountant, "/Billing", "/MedicalRecords")]
+    public async Task WorkspaceSidebarShowsAuthorizedRoleLinks(string role, string visible, string absent)
     {
-        using var scope = _factory.Services.CreateScope();
+        var email = $"navigation-{Guid.NewGuid():N}@example.test";
+        const string password = "Fictional!Password123";
+        using var factory = new AuthenticationTestApplication();
+        await CreateUserAsync(email, password, role, factory: factory);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+            { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        using var login = await PostLoginAsync(client, email, password, null);
+        Assert.Equal(HttpStatusCode.Redirect, login.StatusCode);
+
+        var dashboard = await client.GetStringAsync("/Dashboard");
+        var navigation = Regex.Match(dashboard, "<nav[^>]*aria-label=\"Main navigation\"[^>]*>[\\s\\S]*?</nav>");
+        Assert.True(navigation.Success);
+        Assert.Matches($"href=\"{Regex.Escape(visible)}(?:/[^\"]*)?\"", navigation.Value);
+        Assert.DoesNotMatch($"href=\"{Regex.Escape(absent)}(?:/[^\"]*)?\"", navigation.Value);
+        Assert.Matches("aria-current=\"location\"[^>]*href=\"/Dashboard\"", navigation.Value);
+    }
+
+    [Fact]
+    public async Task WorkspaceLogoutFormSignsOutUsingAntiforgeryToken()
+    {
+        var email = $"logout-{Guid.NewGuid():N}@example.test";
+        const string password = "Fictional!Password123";
+        using var factory = new AuthenticationTestApplication();
+        await CreateUserAsync(email, password, HospitalRoles.Administrator, factory: factory);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+            { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false });
+        using var login = await PostLoginAsync(client, email, password, null);
+        Assert.Equal(HttpStatusCode.Redirect, login.StatusCode);
+
+        var dashboard = await client.GetStringAsync("/Dashboard");
+        var logoutForm = Regex.Match(dashboard, "<form[^>]*action=\"/Account/Logout\"[^>]*>[\\s\\S]*?</form>");
+        Assert.True(logoutForm.Success);
+        var token = Regex.Match(logoutForm.Value, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"");
+        Assert.True(token.Success);
+        using var form = new FormUrlEncodedContent(new Dictionary<string, string> { ["__RequestVerificationToken"] = token.Groups[1].Value });
+        using var logout = await client.PostAsync("/Account/Logout", form);
+        Assert.Equal(HttpStatusCode.Redirect, logout.StatusCode);
+        using var afterLogout = await client.GetAsync("/Dashboard");
+        Assert.Equal(HttpStatusCode.Redirect, afterLogout.StatusCode);
+        Assert.Contains("/Account/Login", afterLogout.Headers.Location!.OriginalString);
+    }
+
+    private async Task<Guid> CreateUserAsync(string email, string password, string role, bool requirePasswordChange = false,
+        AuthenticationTestApplication? factory = null)
+    {
+        using var scope = (factory ?? _factory).Services.CreateScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 

@@ -4,7 +4,7 @@
 <partial name="_Messages" />
 @if (User.IsInRole("Pharmacist")) { <partial name="_Links" /> }
 <a asp-action="Medicine" class="btn btn-sm btn-primary mb-3 d-print-none">Register medicine</a>
-<form asp-action="Medicines" method="get" class="row g-2 mb-3 d-print-none">
+<form asp-action="Medicines" method="get" class="hms-filter row g-2 mb-3 d-print-none">
     <label class="col-md-4">Name or code <input name="Search" maxlength="100" value="@Model.Filter.Search" class="form-control" /></label>
     <label class="col-md-3">Availability <select name="Active" class="form-select"><option value="">All</option>
         <option value="true" selected="@(Model.Filter.Active == true)">Active</option>
@@ -13,7 +13,7 @@
     <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
 </form>
 <partial name="_Print" />
-@if (Model.Rows.Count == 0) { <p>No medicines match these filters.</p> }
+@if (Model.Rows.Count == 0) { <p class="hms-empty">No medicines match these filters.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Code</th><th>Medicine</th><th>Eligible stock</th><th>Reorder threshold</th><th>Availability</th></tr></thead><tbody>

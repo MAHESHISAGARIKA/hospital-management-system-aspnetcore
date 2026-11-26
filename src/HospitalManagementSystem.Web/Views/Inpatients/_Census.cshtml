@@ -1,5 +1,5 @@
 @model IReadOnlyList<WardCensus>
-@if (Model.Count == 0) { <p>No wards have been registered.</p> }
+@if (Model.Count == 0) { <p class="hms-empty">No wards have been registered.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Ward</th><th>Active beds</th><th>Occupied</th><th>Ready</th><th>Unavailable</th><th>Occupancy rate</th></tr></thead><tbody>

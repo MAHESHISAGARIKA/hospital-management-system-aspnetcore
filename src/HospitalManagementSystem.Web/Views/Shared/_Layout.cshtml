@@ -1,129 +1,80 @@
+@{
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var accountName = User.Identity?.Name ?? "";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var initial = string.IsNullOrWhiteSpace(accountName) ? "H" : accountName[..1].ToUpperInvariant();
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - HospitalManagementSystem.Web</title>
+    <title>@ViewData["Title"] | Hospital Management System</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/HospitalManagementSystem.Web.styles.css" asp-append-version="true" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">HospitalManagementSystem.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
-                            </li>
-                            <li class="nav-item d-print-none"><a class="nav-link text-dark" asp-controller="Reports" asp-action="Index">Reports</a></li>
-                            @if (User.IsInRole("Administrator"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="Users" asp-action="Index">Users</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="Departments" asp-action="Index">Departments</a>
-                                </li>
-                            }
-                            @if (User.IsInRole("Administrator") || User.IsInRole("Receptionist") || User.IsInRole("Doctor"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="Appointments" asp-action="Index">Appointments</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="Patients" asp-action="Index">Patients</a>
-                                </li>
-                            }
-                            @if (User.IsInRole("Administrator") || User.IsInRole("Doctor"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="Doctors" asp-action="Index">Doctors</a>
-                                </li>
-                            }
-                            @if (User.IsInRole("Doctor"))
-                            {
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="MedicalRecords" asp-action="Index">Medical records</a>
-                                </li>
-                            }
-                            @if (User.IsInRole("Doctor") || User.IsInRole("LaboratoryStaff"))
-                            {
-                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Laboratory" asp-action="Index">Laboratory</a></li>
-                            }
-                            @if (User.IsInRole("Administrator"))
-                            {
-                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Laboratory" asp-action="Tests">Lab catalog</a></li>
-                            }
-                            @if (User.IsInRole("Pharmacist"))
-                            {
-                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Pharmacy" asp-action="Index">Pharmacy</a></li>
-                            }
-                            @if (User.IsInRole("Administrator"))
-                            {
-                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Pharmacy" asp-action="Medicines">Medicine catalog</a></li>
-                            }
-                            @if (User.IsInRole("Accountant"))
-                            {
-                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Billing" asp-action="Index">Billing</a></li>
-                            }
-                            @if (User.IsInRole("Doctor") || User.IsInRole("Receptionist"))
-                            { <li class="nav-item"><a class="nav-link text-dark" asp-controller="Outpatients" asp-action="Today">OPD</a></li> }
-                            @if (User.IsInRole("Doctor") || User.IsInRole("Receptionist") || User.IsInRole("Nurse"))
-                            { <li class="nav-item"><a class="nav-link text-dark" asp-controller="Inpatients" asp-action="Index">Inpatients</a></li> }
-                            @if (User.IsInRole("Administrator"))
-                            { <li class="nav-item"><a class="nav-link text-dark" asp-controller="Inpatients" asp-action="Wards">Wards and beds</a></li> }
-                            @if (User.IsInRole("Administrator"))
-                            { <li class="nav-item"><a class="nav-link text-dark" href="/Staff">Staff</a></li> }
-                            else
-                            {
-                                @await Component.InvokeAsync("StaffNavigation")
-                            }
-                        }
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <div class="d-flex align-items-center gap-2">
-                            <a class="nav-link text-dark" asp-controller="Account" asp-action="ChangePassword">Change password</a>
-                            <form asp-controller="Account" asp-action="Logout" method="post" class="mb-0">
-                                <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
-                            </form>
-                        </div>
-                    }
-                    else
-                    {
-                        <a class="btn btn-outline-primary btn-sm" asp-controller="Account" asp-action="Login">Login</a>
-                    }
-                </div>
+<body class="@(signedIn ? "hms-app" : "hms-public")">
+    <a class="visually-hidden-focusable hms-skip" href="#main-content">Skip to content</a>
+    <div class="hms-shell">
+    @if (signedIn)
+    {
+        <aside id="workspace-navigation" class="offcanvas-lg offcanvas-start hms-sidebar d-print-none" tabindex="-1" aria-labelledby="workspace-navigation-title">
+            <div class="hms-sidebar-header">
+                <a class="hms-brand" asp-controller="Dashboard" asp-action="Index" id="workspace-navigation-title">
+                    <span class="hms-brand-mark" aria-hidden="true">+</span><span>Hospital Management<br />System</span>
+                </a>
+                <button class="btn-close btn-close-white d-lg-none" type="button" data-bs-dismiss="offcanvas" data-bs-target="#workspace-navigation" aria-label="Close navigation"></button>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+            <partial name="_WorkspaceNavigation" />
+        </aside>
+    }
+        <div class="hms-workspace">
+            <header class="hms-topbar d-print-none">
+                <div class="hms-topbar-start">
+                @if (signedIn)
+                {
+                    <button class="btn hms-menu-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#workspace-navigation" aria-controls="workspace-navigation" aria-label="Open navigation"><span aria-hidden="true">?</span></button>
+                    <button class="btn hms-menu-button d-none d-lg-inline-flex" type="button" data-sidebar-toggle aria-controls="workspace-navigation" aria-expanded="true" aria-label="Collapse navigation"><span aria-hidden="true">?</span></button>
+                    <span class="hms-topbar-location">@(currentController is "Dashboard" ? "Overview" : ViewData["Title"])</span>
+                }
+                else
+                {
+                    <a class="hms-brand" asp-controller="Home" asp-action="Index"><span class="hms-brand-mark" aria-hidden="true">+</span><span>Hospital Management System</span></a>
+                }
+                </div>
+                @if (signedIn)
+                {
+                    <div class="hms-topbar-account">
+                        <div class="dropdown">
+                            <button class="btn hms-profile dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account settings">
+                                <span class="hms-avatar" aria-hidden="true">@initial</span><span class="hms-profile-name">@accountName</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">Change password</a></li>
+                            </ul>
+                        </div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="mb-0">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Logout</button>
+                        </form>
+                    </div>
+                }
+                else if (currentController != "Account")
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-controller="Account" asp-action="Login">Sign in</a>
+                }
+            </header>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - HospitalManagementSystem.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <main id="main-content" class="hms-content" tabindex="-1">
+                @RenderBody()
+            </main>
+            <footer class="hms-footer d-print-none">
+                <span>Hospital Management System</span>
+                <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+            </footer>
         </div>
-    </footer>
+    </div>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

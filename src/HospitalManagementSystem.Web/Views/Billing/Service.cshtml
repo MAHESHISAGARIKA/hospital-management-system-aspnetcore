@@ -17,7 +17,7 @@
 @if (service is not null)
 {
     <section><h2 class="h5">Price history</h2>
-        @if (service.Prices.Count == 0) { <p>No price periods have been configured.</p> }
+        @if (service.Prices.Count == 0) { <p class="hms-empty">No price periods have been configured.</p> }
         else
         {
             <div class="table-responsive"><table class="table"><thead><tr><th>Start</th><th>End (exclusive)</th><th>Price</th><th>Configured by</th></tr></thead><tbody>

@@ -2,7 +2,7 @@
 @{ ViewData["Title"] = "Stock movements"; }
 <h1 class="h3">Stock movements</h1>
 <partial name="_Links" /><partial name="_Messages" /><partial name="_ReportFilters" model="Model.Filter" /><partial name="_Print" />
-@if (Model.Rows.Count == 0) { <p>No movements match these filters.</p> }
+@if (Model.Rows.Count == 0) { <p class="hms-empty">No movements match these filters.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Time (Asia/Colombo)</th><th>Medicine</th><th>Batch</th><th>Movement</th><th>Quantity</th><th>Reason</th></tr></thead><tbody>

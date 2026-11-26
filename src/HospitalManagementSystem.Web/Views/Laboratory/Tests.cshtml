@@ -4,7 +4,7 @@
 }
 <h1 class="h3 mb-3">Laboratory test catalog</h1>
 <partial name="_Messages" />
-<form method="get" asp-action="Tests" class="d-flex flex-wrap align-items-end gap-2 mb-3">
+<form method="get" asp-action="Tests" class="hms-filter d-flex flex-wrap align-items-end gap-2 mb-3">
     <label>Code or test name <input name="Search" value="@Context.Request.Query["Search"]" class="form-control" /></label>
     <button class="btn btn-outline-primary">Search</button>
 </form>

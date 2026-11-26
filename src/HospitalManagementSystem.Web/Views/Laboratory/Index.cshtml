@@ -16,7 +16,7 @@
     </div></div></div>
 }
 </div>
-<form method="get" asp-action="Index" class="row g-2 mb-3">
+<form method="get" asp-action="Index" class="hms-filter row g-2 mb-3">
     <label class="col-md-3">Order or patient number <input name="Search" value="@filter.Search" maxlength="100" class="form-control" /></label>
     <label class="col-md-2">Date (Asia/Colombo) <input type="date" name="Date" value="@(filter.Date?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
     <label class="col-md-3">Doctor <select name="DoctorId" class="form-select">
@@ -35,7 +35,7 @@
     </select></label>
     <div class="col-md-2 align-self-end"><button class="btn btn-primary">Filter</button></div>
 </form>
-@if (Model.Orders.Count == 0) { <p class="alert alert-light border">No requests match these filters.</p> }
+@if (Model.Orders.Count == 0) { <p class="hms-empty">No requests match these filters.</p> }
 else
 {
     <div class="table-responsive"><table class="table align-middle">

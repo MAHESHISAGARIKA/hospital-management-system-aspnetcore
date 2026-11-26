@@ -24,7 +24,7 @@
 @if (timeline)
 {
     var first = Model.Encounters[0];
-    <form method="get" asp-action="Patient" asp-route-id="@first.PatientId" class="row g-2 mb-4 d-print-none">
+    <form method="get" asp-action="Patient" asp-route-id="@first.PatientId" class="hms-filter row g-2 mb-4 d-print-none">
         <label class="col-md-3">From <input type="date" name="from" class="form-control" value="@Model.From?.ToString("yyyy-MM-dd")" /></label>
         <label class="col-md-3">To <input type="date" name="to" class="form-control" value="@Model.To?.ToString("yyyy-MM-dd")" /></label>
         <label class="col-md-4">Encounter
@@ -47,7 +47,7 @@
             if (Model.From.HasValue && day < Model.From.Value || Model.To.HasValue && day > Model.To.Value) continue;
             <p><a asp-controller="Inpatients" asp-action="Details" asp-route-id="@stay.Id">@stay.Number</a> ? @stay.Status ? @day.ToString("dd MMM yyyy")</p>
         }
-        @if (admissions.Length == 0) { <p>No assigned inpatient stays.</p> }
+        @if (admissions.Length == 0) { <p class="hms-empty">No assigned inpatient stays.</p> }
         </section>
     }
     <ol class="list-group list-group-numbered mb-4">

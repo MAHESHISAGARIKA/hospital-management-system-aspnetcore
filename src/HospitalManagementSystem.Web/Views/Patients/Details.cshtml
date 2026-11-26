@@ -6,7 +6,7 @@
 @if (TempData["StatusMessage"] is string message) { <div class="alert alert-success">@message</div> }
 @if (TempData["DocumentError"] is string documentError) { <div class="alert alert-danger">@documentError</div> }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
     <div><h1 class="h3 mb-1">@Model.Patient.FirstName @Model.Patient.LastName</h1><span class="text-muted">@Model.Patient.PatientNumber</span></div>
     @if (User.IsInRole("Administrator") || User.IsInRole("Receptionist"))
     {

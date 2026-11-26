@@ -13,7 +13,7 @@
     var previous = new Dictionary<string, string>(filters) { ["page"] = (Model.Filter.Page - 1).ToString(CultureInfo.InvariantCulture) };
     var next = new Dictionary<string, string>(filters) { ["page"] = (Model.Filter.Page + 1).ToString(CultureInfo.InvariantCulture) };
 }
-<nav class="d-print-none d-flex flex-wrap gap-3 mb-3" aria-label="Hospital reports">
+<nav class="hms-report-nav d-print-none d-flex flex-wrap gap-3 mb-3" aria-label="Hospital reports">
     <a asp-controller="Reports" asp-action="Index">All reports</a>
     @foreach (var kind in Model.Navigation)
     {
@@ -22,11 +22,11 @@
 </nav>
 @if (Model.Reports.Count == 0)
 {
-    <p>No reporting summaries are available for your account.</p>
+    <p class="hms-empty">No reporting summaries are available for your account.</p>
 }
 else
 {
-    <form method="get" class="row g-3 align-items-end mb-3 d-print-none">
+    <form method="get" class="hms-filter row g-3 align-items-end mb-3 d-print-none">
         <label class="col-sm-6 col-lg-3">From (Colombo)
             <input type="date" name="from" value="@filters.GetValueOrDefault("from")" class="form-control" required />
         </label>
@@ -83,7 +83,7 @@ else
     }
     @foreach (var reportSection in Model.Reports)
     {
-        <section class="border-top pt-3 mt-4" aria-label="@reportSection.Kind">
+        <section class="hms-report-section" aria-label="@reportSection.Kind">
             @if (Model.Dashboard) { <h2 class="h4">@reportSection.Kind</h2> }
             <p class="text-body-secondary">@reportSection.DateMeaning</p>
             @foreach (var group in reportSection.Groups)
@@ -95,7 +95,7 @@ else
                 <h2 class="h5">@table.Title</h2>
                 @if (table.Rows.Count == 0)
                 {
-                    <p>No records match these filters.</p>
+                    <p class="hms-empty">No records match these filters.</p>
                 }
                 else
                 {
