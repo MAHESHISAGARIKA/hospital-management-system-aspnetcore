@@ -1,0 +1,46 @@
+@model HospitalManagementSystem.Web.Models.ViewModels.EmployeeInput
+@{
+    var employeeId = ViewData["EmployeeRecordId"] as Guid?;
+}
+<form asp-action="Save" asp-route-id="@employeeId" method="post" class="row g-2 mt-2">
+    <div asp-validation-summary="ModelOnly" class="text-danger col-12" role="alert"></div>
+    @if (employeeId.HasValue)
+    {
+        <input asp-for="Token" type="hidden" />
+        <span asp-validation-for="Token" class="text-danger col-12"></span>
+    }
+    <label class="col-md-4">Full name (required)
+        <input asp-for="Name" required maxlength="120" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </label>
+    <label class="col-md-4">Work email (required)
+        <input asp-for="Email" type="email" required maxlength="254" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </label>
+    <label class="col-md-4">Job title (required)
+        <input asp-for="Job" required maxlength="100" class="form-control" />
+        <span asp-validation-for="Job" class="text-danger"></span>
+    </label>
+    <label class="col-md-3">Joining date (required)
+        <input asp-for="From" type="date" asp-format="{0:yyyy-MM-dd}" required class="form-control" />
+        <span asp-validation-for="From" class="text-danger"></span>
+    </label>
+    <label class="col-md-5">Linked account (optional)
+        <select asp-for="Account" class="form-select">
+            <option value="">Unlinked</option>
+            @foreach (var account in (ApplicationUser[])ViewData["Accounts"]!)
+            {
+                <option value="@account.Id">@account.UserName</option>
+            }
+        </select>
+        <span asp-validation-for="Account" class="text-danger"></span>
+    </label>
+    <label class="col-md-2">Status (required)
+        <select asp-for="Active" required class="form-select">
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+        </select>
+        <span asp-validation-for="Active" class="text-danger"></span>
+    </label>
+    <div class="col-12"><button class="btn btn-primary">Save employee</button></div>
+</form>

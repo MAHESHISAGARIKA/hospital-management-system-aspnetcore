@@ -7,7 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HospitalManagementSystem.Web.Services.Staff;
 
-public sealed class StaffFault(string message) : Exception(message);
+public sealed class StaffFault(string message, string? field = null) : Exception(message)
+{
+    public string? Field { get; } = field;
+}
 
 public sealed class StaffService(HospitalDbContext db, IAuditLogService audit, TimeProvider clock)
 {
@@ -41,11 +44,13 @@ public sealed class StaffService(HospitalDbContext db, IAuditLogService audit, T
         string job, DateOnly joined, bool active, Guid? account, CancellationToken ct)
     {
         var actor = await Actor(user, true, ct);
-        name = Required(name, 120);
-        email = Required(email, 254);
-        job = Required(job, 100);
-        if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email) || joined.Year < 1900 || joined > Today)
-            throw new StaffFault("Enter a valid work email and joining date.");
+        name = Required(name, 120, "Name");
+        email = Required(email, 254, "Email");
+        job = Required(job, 100, "Job");
+        if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
+            throw new StaffFault("Enter a valid work email address.", "Email");
+        if (joined.Year < 1900 || joined > Today)
+            throw new StaffFault("Choose a joining date between 1900 and today (Asia/Colombo).", "From");
         var row = id.HasValue ? await db.Set<Employee>().FindAsync([id.Value], ct) : new Employee
         {
             Id = Guid.CreateVersion7(), CreatedAtUtc = Now, CreatedBy = actor
@@ -54,7 +59,7 @@ public sealed class StaffService(HospitalDbContext db, IAuditLogService audit, T
         if (id.HasValue) Check(token, row.Token);
         if (account.HasValue && (!await db.Users.AnyAsync(x => x.Id == account && x.IsEnabled, ct) ||
             await db.Set<Employee>().AnyAsync(x => x.UserId == account && x.Id != row.Id, ct)))
-            throw new StaffFault("Choose an enabled account that is not linked to another employee.");
+            throw new StaffFault("Choose an enabled account that is not linked to another employee.", "Account");
         if ((!active || account != row.UserId) && await db.Set<StaffAttendance>().AnyAsync(x => x.EmployeeId == row.Id && x.OutUtc == null, ct))
             throw new StaffFault("Close the employee?s current attendance before changing access.");
         if (!id.HasValue)
@@ -219,8 +224,8 @@ public sealed class StaffService(HospitalDbContext db, IAuditLogService audit, T
     {
         if (token == Guid.Empty || token != current) throw new StaffFault("This record changed. Reload the page.");
     }
-    private static string Required(string? value, int size) => value?.Trim() is { Length: > 0 } text && text.Length <= size
-        ? text : throw new StaffFault($"Enter a value of up to {size} characters.");
+    private static string Required(string? value, int size, string? field = null) => value?.Trim() is { Length: > 0 } text && text.Length <= size
+        ? text : throw new StaffFault($"Enter a value of up to {size} characters.", field);
     private static DateTime LocalToUtc(DateTime value)
     {
         if (value.Year is < 1900 or > 9998) throw new StaffFault("Choose a valid local date.");
