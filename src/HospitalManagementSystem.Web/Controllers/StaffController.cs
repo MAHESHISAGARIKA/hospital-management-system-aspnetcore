@@ -19,12 +19,16 @@ public sealed class StaffController(StaffService staff, HospitalDbContext db) : 
     [HttpGet("Reports")]
     [HttpGet("My")]
     [HttpGet("Employees/{id:guid}")]
-    public async Task<IActionResult> Index(Guid? id, string? search, Guid? department, bool? active, DateOnly? date,
+    public Task<IActionResult> Index(Guid? id, string? search, Guid? department, bool? active, DateOnly? date,
         StaffLeaveStatus? status, int page, CancellationToken ct)
+        => RenderIndex(id, search, department, active, date, status, page, ct);
+
+    private async Task<IActionResult> RenderIndex(Guid? id, string? search, Guid? department, bool? active, DateOnly? date,
+        StaffLeaveStatus? status, int page, CancellationToken ct, EmployeeInput? submitted = null)
     {
         try
         {
-            if (!ModelState.IsValid || date is { Year: < 1900 or > 9998 }) return BadRequest("Invalid filter.");
+            if ((submitted is null && !ModelState.IsValid) || date is { Year: < 1900 or > 9998 }) return BadRequest("Invalid filter.");
             var isSelfPage = Request.Path.Value?.TrimEnd('/').EndsWith("/My", StringComparison.OrdinalIgnoreCase) == true;
             var admin = User.IsInRole("Administrator") && !isSelfPage;
             if (!admin && !isSelfPage) return Forbid();
@@ -91,7 +95,8 @@ public sealed class StaffController(StaffService staff, HospitalDbContext db) : 
             ViewData["Corrections"] = await db.Set<StaffAttendanceCorrection>().AsNoTracking()
                 .Where(c => sessionIds.Contains(c.AttendanceId)).OrderByDescending(c => c.AtUtc).ToArrayAsync(ct);
             ViewData["Decisions"] = await db.Set<StaffLeaveDecision>().AsNoTracking().Where(d => requestIds.Contains(d.RequestId)).ToArrayAsync(ct);
-            return View(new StaffPage(rows, history, sessions, requests,
+            ViewData["SubmittedEmployee"] = submitted;
+            return View(nameof(Index), new StaffPage(rows, history, sessions, requests,
                 await db.Set<StaffLeaveType>().AsNoTracking().Where(t => admin || t.Active).OrderBy(t => t.Code).ToArrayAsync(ct),
                 admin, selected, page));
         }
@@ -100,8 +105,23 @@ public sealed class StaffController(StaffService staff, HospitalDbContext db) : 
     }
 
     [Authorize(Roles = "Administrator"), HttpPost("Employees/Save/{id:guid?}")]
-    public Task<IActionResult> Save(Guid? id, StaffInput input, CancellationToken ct) => Run(async () =>
-    { await staff.SaveEmployee(User, id, input.Token, input.Name, input.Email, input.Job, input.From, input.Active, input.Account, ct); }, id);
+    public async Task<IActionResult> Save([FromRoute] Guid? id, [FromForm] EmployeeInput input, CancellationToken ct)
+    {
+        try
+        {
+            if (ModelState.IsValid)
+            {
+                await staff.SaveEmployee(User, id, input.Token.GetValueOrDefault(), input.Name!, input.Email!, input.Job!,
+                    input.From!.Value, input.Active!.Value, input.Account, ct);
+                TempData["StaffMessage"] = "Change saved.";
+                return RedirectToAction(nameof(Index), new { id });
+            }
+        }
+        catch (UnauthorizedAccessException) { return Forbid(); }
+        catch (StaffFault error) { ModelState.AddModelError(error.Field ?? string.Empty, error.Message); }
+
+        return await RenderIndex(id, null, null, null, null, null, 1, ct, input);
+    }
 
     [Authorize(Roles = "Administrator"), HttpPost("Departments/Transfer/{id:guid}")]
     public Task<IActionResult> Transfer(Guid id, StaffInput input, CancellationToken ct)

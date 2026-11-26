@@ -30,7 +30,13 @@
 }
 @if (Model.Admin)
 {
-    var accounts = (ApplicationUser[])ViewData["Accounts"]!;
+    var submitted = ViewData["SubmittedEmployee"] as EmployeeInput;
+    var input = submitted ?? new EmployeeInput
+    {
+        Token = employee?.Token, Name = employee?.Name, Email = employee?.WorkEmail, Job = employee?.JobTitle,
+        From = employee?.Joined, Active = employee?.Active ?? true, Account = employee?.UserId
+    };
+    ViewData["EmployeeRecordId"] = employee?.Id;
     <form method="get" action="/Staff" class="hms-filter row g-2 mb-3 d-print-none">
         <label class="col-md-4">Name, number or job title <input name="search" value="@Context.Request.Query["search"]" class="form-control" /></label>
         <label class="col-md-3">Department <select name="department" class="form-select"><option value="">All</option>
@@ -59,23 +65,9 @@
         }</nav>
 
     }
-    <details class="border rounded p-3 mb-3 d-print-none" open="@(employee != null)">
+    <details class="border rounded p-3 mb-3 d-print-none" open="@(employee != null || submitted != null)">
         <summary>@(employee == null ? "Add Staff" : "Edit employee")</summary>
-        <form asp-action="Save" asp-route-id="@employee?.Id" method="post" class="row g-2 mt-2">
-            <input type="hidden" name="Token" value="@employee?.Token" />
-            <label class="col-md-4">Full name <input name="Name" value="@employee?.Name" required maxlength="120" class="form-control" /></label>
-            <label class="col-md-4">Work email <input name="Email" type="email" value="@employee?.WorkEmail" required class="form-control" /></label>
-            <label class="col-md-4">Job title <input name="Job" value="@employee?.JobTitle" required class="form-control" /></label>
-            <label class="col-md-3">Joining date <input name="From" type="date" value="@(employee?.Joined.ToString("yyyy-MM-dd"))" required class="form-control" /></label>
-            <label class="col-md-5">Linked account <select name="Account" class="form-select">
-                <option value="">Unlinked</option>
-                @foreach (var account in accounts) { <option value="@account.Id" selected="@(employee?.UserId == account.Id)">@account.UserName</option> }
-            </select></label>
-            <label class="col-md-2">Status <select name="Active" class="form-select">
-                <option value="true" selected="@(employee?.Active != false)">Active</option><option value="false" selected="@(employee?.Active == false)">Inactive</option>
-            </select></label>
-            <div class="col-12"><button class="btn btn-primary">Save employee</button></div>
-        </form>
+        <partial name="_EmployeeForm" model="input" />
     </details>
 }
 @if (employee != null)
@@ -200,4 +192,8 @@ else
             }
         }
     </article>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
 }

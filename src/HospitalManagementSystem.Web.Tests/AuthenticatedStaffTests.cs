@@ -21,6 +21,53 @@ public sealed class AuthenticatedStaffTests(AuthenticationTestApplication factor
     private static DateOnly LeaveDay => DateOnly.FromDateTime(AppointmentService.ToColombo(DateTime.UtcNow)).AddDays(3);
 
     [Fact]
+    public async Task AddStaffAcceptsEmptyHiddenTokenAndOptionalAccount()
+    {
+        using var isolated = new AuthenticationTestApplication();
+        using var admin = await SignIn(HospitalRoles.Administrator, isolated: isolated);
+        var fields = EmployeeForm(Guid.Empty);
+        fields["Token"] = "";
+        fields["Account"] = "";
+        fields["From"] = "2026-02-19";
+
+        await Saved(admin, "/Staff/Employees/Save", "/Staff", fields);
+        await using var scope = isolated.Services.CreateAsyncScope();
+        var employee = await Db(scope).Set<Employee>().SingleAsync();
+        Assert.Null(employee.UserId);
+        Assert.Equal(new DateOnly(2026, 2, 19), employee.Joined);
+    }
+
+    [Theory]
+    [InlineData("Name", "", "Enter the employee")]
+    [InlineData("Email", "invalid-email", "Enter a valid work email address.")]
+    [InlineData("From", "2099-01-01", "Choose a joining date between 1900 and today")]
+    public async Task InvalidAddStaffKeepsFormOpenAndPreservesOtherValues(string field, string value, string message)
+    {
+        using var isolated = new AuthenticationTestApplication();
+        using var admin = await SignIn(HospitalRoles.Administrator, isolated: isolated);
+        var fields = EmployeeForm(Guid.Empty);
+        fields["Account"] = "";
+        fields["Name"] = "Fictional Staff Form";
+        fields["Job"] = "Fictional Receptionist";
+        fields["Active"] = "false";
+        fields[field] = value;
+
+        using var response = await Post(admin, "/Staff/Employees/Save", "/Staff", fields);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Matches("<details[^>]*open[^>]*>\\s*<summary>Add Staff", html);
+        var fieldError = Regex.Match(html, $"""<span[^>]*data-valmsg-for="{field}"[^>]*>([^<]+)</span>""");
+        Assert.True(fieldError.Success);
+        Assert.Contains(message, WebUtility.HtmlDecode(fieldError.Groups[1].Value));
+        Assert.Contains("Fictional Receptionist", html);
+        Assert.Matches("""<option(?=[^>]*value="false")(?=[^>]*selected)[^>]*>Inactive""", html);
+        if (field == "Email") Assert.Contains("invalid-email", html);
+        if (field == "From") Assert.Contains("2099-01-01", html);
+        await using var scope = isolated.Services.CreateAsyncScope();
+        Assert.False(await Db(scope).Set<Employee>().AnyAsync());
+    }
+
+    [Fact]
     public void StaffDepartmentSummaryTranslatesForPostgreSqlWithoutConnecting()
     {
         using var database = new HospitalDbContext(new DbContextOptionsBuilder<HospitalDbContext>()
