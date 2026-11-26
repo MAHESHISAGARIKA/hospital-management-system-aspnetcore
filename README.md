@@ -85,7 +85,7 @@ dotnet run --project src/HospitalManagementSystem.Web -- --bootstrap-first-admin
 
 The bootstrap reads the password without echo. It does not accept passwords as command-line arguments and refuses if an active Administrator or the email already exists.
 
-No Administrator account or password is seeded automatically.
+No Administrator account or password is seeded automatically. See [Railway deployment](docs/railway-deployment.md) for isolated Production provisioning and container configuration.
 
 ## Run and test
 

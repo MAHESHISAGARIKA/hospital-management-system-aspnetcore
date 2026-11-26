@@ -12,7 +12,16 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-var builder = WebApplication.CreateBuilder(args);
+const string bootstrapFlag = "--bootstrap-first-admin";
+var bootstrap = args.Contains(bootstrapFlag, StringComparer.Ordinal);
+if (bootstrap && (Console.IsInputRedirected || Console.IsOutputRedirected))
+{
+    Console.Error.WriteLine("First Administrator bootstrap requires an interactive terminal.");
+    Environment.ExitCode = 1;
+    return;
+}
+
+var builder = WebApplication.CreateBuilder(args.Where(argument => argument != bootstrapFlag).ToArray());
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -27,7 +36,10 @@ if (!string.IsNullOrWhiteSpace(keyDirectory))
         .PersistKeysToFileSystem(new DirectoryInfo(keyDirectory));
 }
 
+var railwayEdgeHost = RailwayDemoHosting.GetEdgeHost(builder.Configuration);
 var proxyAddress = builder.Configuration["Hosting:TrustedProxy"];
+if (railwayEdgeHost != null && !string.IsNullOrWhiteSpace(proxyAddress))
+    throw new InvalidOperationException("Choose either the isolated Railway edge or a verified immediate proxy.");
 if (!string.IsNullOrWhiteSpace(proxyAddress))
 {
     if (!System.Net.IPAddress.TryParse(proxyAddress, out var trustedProxy))
@@ -42,13 +54,7 @@ if (!string.IsNullOrWhiteSpace(proxyAddress))
     });
 }
 
-var hospitalDatabaseConnection = builder.Configuration.GetConnectionString("HospitalDatabase");
-
-if (string.IsNullOrWhiteSpace(hospitalDatabaseConnection))
-{
-    throw new InvalidOperationException(
-        "The 'HospitalDatabase' connection string is missing. Configure ConnectionStrings:HospitalDatabase using user secrets for local development.");
-}
+var hospitalDatabaseConnection = HospitalDatabaseConfiguration.Resolve(builder.Configuration);
 
 builder.Services.AddDbContext<HospitalDbContext>(options =>
     options.UseNpgsql(hospitalDatabaseConnection));
@@ -137,6 +143,22 @@ builder.Services.AddScoped<IAppointmentNumberGenerator, AppointmentNumberGenerat
 var app = builder.Build();
 if (!string.IsNullOrWhiteSpace(proxyAddress)) app.UseForwardedHeaders();
 
+if (!string.IsNullOrEmpty(builder.Configuration["RAILWAY_SERVICE_ID"]))
+{
+    app.Use(async (context, next) =>
+    {
+        if (railwayEdgeHost != null && RailwayDemoHosting.MatchesEdgeHost(context.Request.Host, railwayEdgeHost))
+            context.Request.Scheme = "https";
+
+        if (!context.Request.IsHttps && context.Request.Path != "/health/live" && context.Request.Path != "/health/ready")
+        {
+            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            return;
+        }
+        await next(context);
+    });
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -145,38 +167,26 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+app.UseWhen(context => context.Request.Path != "/health/live" && context.Request.Path != "/health/ready",
+    branch => branch.UseHttpsRedirection());
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
 using (var scope = app.Services.CreateScope())
 {
-    if (!app.Environment.IsEnvironment("Testing"))
+    if (bootstrap)
     {
+        var database = scope.ServiceProvider.GetRequiredService<HospitalDbContext>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-        try
-        {
-            await RoleInitializer.InitializeAsync(roleManager);
-        }
-        catch (Npgsql.NpgsqlException) when (!app.Environment.IsDevelopment())
-        {
-            throw new InvalidOperationException("Hospital role initialization could not reach the expected database schema. Check connectivity, permissions and migrations.");
-        }
-    }
-
-    if (app.Environment.IsDevelopment() &&
-        args.Any(argument => string.Equals(argument, "--bootstrap-first-admin", StringComparison.Ordinal)))
-    {
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var auditLogService = scope.ServiceProvider.GetRequiredService<IAuditLogService>();
+        await using var transaction = await database.Database.BeginTransactionAsync();
+        await database.Database.ExecuteSqlRawAsync("SELECT pg_advisory_xact_lock(78422106031)");
+        await RoleInitializer.InitializeAsync(roleManager);
 
-        var adminUsers = await userManager.GetUsersInRoleAsync(HospitalRoles.Administrator);
-        var activeAdmin = adminUsers.FirstOrDefault(user => user.IsEnabled && !user.LockoutEnd.HasValue);
-        if (activeAdmin is not null)
-        {
-            throw new InvalidOperationException("First Administrator bootstrap refused: an active Administrator already exists.");
-        }
+        if ((await userManager.GetUsersInRoleAsync(HospitalRoles.Administrator)).Count != 0)
+            throw new InvalidOperationException("First Administrator bootstrap refused: an Administrator already exists.");
 
         Console.Write("Initial Administrator email: ");
         var email = Console.ReadLine()?.Trim();
@@ -221,10 +231,7 @@ using (var scope = app.Services.CreateScope())
 
         var roleResult = await userManager.AddToRoleAsync(admin, HospitalRoles.Administrator);
         if (!roleResult.Succeeded)
-        {
-            await userManager.DeleteAsync(admin);
             throw new InvalidOperationException("Administrator bootstrap could not assign the Administrator role.");
-        }
 
         await auditLogService.WriteAsync(
             "FirstAdministratorCreated",
@@ -232,7 +239,20 @@ using (var scope = app.Services.CreateScope())
             admin.Id,
             "Created through the deliberate local bootstrap procedure.");
 
+        await transaction.CommitAsync();
         Console.WriteLine("First Administrator account created successfully.");
+        return;
+    }
+    if (!app.Environment.IsEnvironment("Testing"))
+    {
+        try
+        {
+            await RoleInitializer.InitializeAsync(scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
+        }
+        catch (Npgsql.NpgsqlException) when (!app.Environment.IsDevelopment())
+        {
+            throw new InvalidOperationException("Hospital role initialization could not reach the expected database schema. Check connectivity, permissions and migrations.");
+        }
     }
 }
 
