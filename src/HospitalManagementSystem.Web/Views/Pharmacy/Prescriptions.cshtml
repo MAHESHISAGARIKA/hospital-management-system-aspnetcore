@@ -16,7 +16,7 @@ else
     <div class="table-responsive"><table class="table"><thead><tr><th>Prescription</th><th>Patient</th><th>Prescriber</th><th>Signed (Asia/Colombo)</th><th>Status</th></tr></thead><tbody>
     @foreach (var row in Model.Rows)
     {
-        <tr><td><a asp-action="Prescription" asp-route-id="@row.Id">@row.Id</a></td><td>@row.PatientName ? @row.PatientNumber</td><td>@row.Doctor</td>
+        <tr><td><a asp-action="Prescription" asp-route-id="@row.Id">@row.Id</a></td><td>@row.PatientName | @row.PatientNumber</td><td>@row.Doctor</td>
             <td>@AppointmentService.ToColombo(row.SignedUtc).ToString("dd MMM yyyy HH:mm")</td><td>@row.Status</td></tr>
     }
     </tbody></table></div>

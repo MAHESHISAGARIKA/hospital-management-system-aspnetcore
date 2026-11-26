@@ -5,6 +5,7 @@ using HospitalManagementSystem.Web.Authorization;
 using HospitalManagementSystem.Web.Data;
 using HospitalManagementSystem.Web.Models;
 using HospitalManagementSystem.Web.Services.Appointments;
+using HospitalManagementSystem.Web.Services.Staff;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,30 @@ public sealed class AuthenticatedStaffTests(AuthenticationTestApplication factor
     private const string Password = "Synthetic!Staff678";
     private const string PrivateReason = "Fictional private leave reason";
     private static DateOnly LeaveDay => DateOnly.FromDateTime(AppointmentService.ToColombo(DateTime.UtcNow)).AddDays(3);
+
+    [Fact]
+    public void StaffDepartmentSummaryTranslatesForPostgreSqlWithoutConnecting()
+    {
+        using var database = new HospitalDbContext(new DbContextOptionsBuilder<HospitalDbContext>()
+            .UseNpgsql("Host=127.0.0.1;Port=1;Database=design_only").Options);
+        var sql = StaffService.CurrentDepartmentCounts(database).ToQueryString();
+
+        Assert.Contains("GROUP BY", sql);
+        Assert.Contains("ORDER BY", sql);
+    }
+
+    [Fact]
+    public async Task AdministratorSeesStaffEmptyStateAndExistingRegistrationForm()
+    {
+        using var isolated = new AuthenticationTestApplication();
+        using var admin = await SignIn(HospitalRoles.Administrator, isolated: isolated);
+        var page = await admin.Http.GetStringAsync("/Staff");
+
+        Assert.Contains("No staff members have been registered yet.", page);
+        Assert.Contains("Add Staff", page);
+        Assert.Contains("/Staff/Employees/Save", page);
+        Assert.Contains("__RequestVerificationToken", page);
+    }
 
     [Fact]
     public async Task AdministratorRegistersAndUpdatesEmployee()
@@ -312,9 +337,10 @@ public sealed class AuthenticatedStaffTests(AuthenticationTestApplication factor
         Assert.False(await db.Set<StaffLeaveDecision>().AnyAsync(d => d.RequestId == original.Id));
     }
 
-    private async Task<Session> SignIn(string role, bool linked = false)
+    private async Task<Session> SignIn(string role, bool linked = false, AuthenticationTestApplication? isolated = null)
     {
-        await using var scope = factory.Services.CreateAsyncScope();
+        var application = isolated ?? factory;
+        await using var scope = application.Services.CreateAsyncScope();
         var services = scope.ServiceProvider;
         var roles = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
         if (!await roles.RoleExistsAsync(role))
@@ -335,7 +361,7 @@ public sealed class AuthenticatedStaffTests(AuthenticationTestApplication factor
             await Db(scope).SaveChangesAsync();
         }
 
-        var session = new Session(factory.CreateClient(new WebApplicationFactoryClientOptions
+        var session = new Session(application.CreateClient(new WebApplicationFactoryClientOptions
             { BaseAddress = new Uri("https://localhost"), AllowAutoRedirect = false }), user, profile);
         using var login = await Post(session, "/Account/Login", "/Account/Login",
             new Dictionary<string, string> { ["Email"] = email, ["Password"] = Password });

@@ -8,28 +8,28 @@
     var sections = new[]
     {
         (Title: "Workspace", Links: new[] {
-            ("Dashboard", "Index", "Dashboard", "?", true),
-            ("Reports", "Index", "Reports", "?", true)
+            ("Dashboard", "Index", "Dashboard", "dashboard", true),
+            ("Reports", "Index", "Reports", "chart", true)
         }),
         (Title: "Patient care", Links: new[] {
-            ("Patients", "Index", "Patients", "?", admin || reception || doctor),
-            ("Appointments", "Index", "Appointments", "?", admin || reception || doctor),
-            ("Doctors", "Index", "Doctors", "?", admin || doctor),
-            ("MedicalRecords", "Index", "Medical records", "?", doctor),
-            ("Outpatients", "Today", "Outpatients (OPD)", "?", doctor || reception),
-            ("Inpatients", "Index", "Inpatients", "?", doctor || reception || nurse)
+            ("Patients", "Index", "Patients", "users", admin || reception || doctor),
+            ("Appointments", "Index", "Appointments", "calendar", admin || reception || doctor),
+            ("Doctors", "Index", "Doctors", "stethoscope", admin || doctor),
+            ("MedicalRecords", "Index", "Medical records", "record", doctor),
+            ("Outpatients", "Today", "Outpatients (OPD)", "arrow", doctor || reception),
+            ("Inpatients", "Index", "Inpatients", "bed", doctor || reception || nurse)
         }),
         (Title: "Operations", Links: new[] {
-            ("Laboratory", "Index", "Laboratory", "?", doctor || User.IsInRole("LaboratoryStaff")),
-            ("Pharmacy", "Index", "Pharmacy", "?", User.IsInRole("Pharmacist")),
-            ("Billing", "Index", "Billing", "?", User.IsInRole("Accountant")),
-            ("Inpatients", "Wards", "Wards and beds", "?", admin)
+            ("Laboratory", "Index", "Laboratory", "flask", doctor || User.IsInRole("LaboratoryStaff")),
+            ("Pharmacy", "Index", "Pharmacy", "pill", User.IsInRole("Pharmacist")),
+            ("Billing", "Index", "Billing", "receipt", User.IsInRole("Accountant")),
+            ("Inpatients", "Wards", "Wards and beds", "bed", admin)
         }),
         (Title: "Administration", Links: new[] {
-            ("Users", "Index", "Users and roles", "?", admin),
-            ("Departments", "Index", "Departments", "?", admin),
-            ("Laboratory", "Tests", "Lab catalog", "?", admin),
-            ("Pharmacy", "Medicines", "Medicine catalog", "?", admin)
+            ("Users", "Index", "Users and roles", "users", admin),
+            ("Departments", "Index", "Departments", "building", admin),
+            ("Laboratory", "Tests", "Lab catalog", "flask", admin),
+            ("Pharmacy", "Medicines", "Medicine catalog", "pill", admin)
         })
     };
 }
@@ -45,7 +45,7 @@
                 ? action is not ("Tests" or "Medicines" or "Wards" or "Ward" or "SaveWard" or "Beds" or "Bed" or "SaveBed")
                 : action == route || (route == "Wards" && action is ("Ward" or "SaveWard" or "Beds" or "Bed" or "SaveBed"))));
             <li><a class="hms-nav-link @(active ? "is-active" : "")" aria-current="@(active ? "location" : null)"
-                   asp-controller="@controller" asp-action="@route"><span class="hms-nav-icon" aria-hidden="true">@icon</span>@label</a></li>
+                   asp-controller="@controller" asp-action="@route"><span class="hms-nav-icon"><partial name="_Icon" model="icon" /></span>@label</a></li>
         }
         </ul>
     }
@@ -53,12 +53,12 @@
     @if (admin)
     {
         <li><a class="hms-nav-link @(current == "Staff" ? "is-active" : "")" aria-current="@(current == "Staff" ? "location" : null)" href="/Staff">
-            <span class="hms-nav-icon" aria-hidden="true">?</span>Staff</a></li>
+            <span class="hms-nav-icon"><partial name="_Icon" model="@("users")" /></span>Staff</a></li>
     }
     else
     {
         @await Component.InvokeAsync("StaffNavigation")
     }
-        <li><a class="hms-nav-link" asp-controller="Home" asp-action="Index"><span class="hms-nav-icon" aria-hidden="true">?</span>Home</a></li>
+        <li><a class="hms-nav-link" asp-controller="Home" asp-action="Index"><span class="hms-nav-icon"><partial name="_Icon" model="@("home")" /></span>Home</a></li>
     </ul>
 </nav>

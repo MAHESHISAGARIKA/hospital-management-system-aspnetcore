@@ -12,7 +12,7 @@
         {
             <a asp-controller="Users" asp-action="Index" class="btn btn-outline-primary">Manage users</a>
         }
-        <a asp-controller="Reports" asp-action="Index" class="btn btn-primary">Open reports <span aria-hidden="true">?</span></a>
+        <a asp-controller="Reports" asp-action="Index" class="btn btn-primary hms-icon-button">Open reports <partial name="_Icon" model="@("arrow")" /></a>
     </div>
 </header>
 @if (TempData["StatusMessage"] is string statusMessage)

@@ -13,5 +13,5 @@
             <a asp-action="@ViewContext.RouteData.Values["action"]" asp-all-route-data="values" class="btn btn-sm btn-outline-secondary">@link.Text</a>
         }
     }
-    <span>Page @Model.Current of @pages ? @Model.Total records</span>
+    <span>Page @Model.Current of @pages | @Model.Total records</span>
 </nav>

@@ -26,7 +26,7 @@
         @if (group.Item2.Count == 0) { <p class="hms-empty">No entries in this range.</p> }
         <ul class="list-unstyled">
         @foreach (var total in group.Item2)
-        { <li class="border-bottom py-1">@total.Label ? LKR @total.Amount.ToString("N2") ? @total.Count entries</li> }
+        { <li class="border-bottom py-1">@total.Label | LKR @total.Amount.ToString("N2") | @total.Count entries</li> }
         </ul>
     </section>
 }

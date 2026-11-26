@@ -11,7 +11,7 @@
     <label class="col-md-6">Medicine <select asp-for="MedicineId" class="form-select" required>
         <option value="">Choose active medicine</option>
         @foreach (var medicine in medicines)
-        { <option value="@medicine.Id">@medicine.Code ? @medicine.GenericName ? @medicine.Strength ? @medicine.Unit</option> }
+        { <option value="@medicine.Id">@medicine.Code | @medicine.GenericName | @medicine.Strength | @medicine.Unit</option> }
     </select></label>
     <label class="col-md-3">Batch number <input asp-for="Number" maxlength="60" required class="form-control" /></label>
     <label class="col-md-3">Quantity in stock unit <input asp-for="Quantity" inputmode="decimal" required class="form-control" /></label>

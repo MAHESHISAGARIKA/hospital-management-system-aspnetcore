@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="500" viewBox="0 0 720 500">
+  <title>Illustration of a modern hospital entrance</title>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#e6f2ff"/><stop offset="1" stop-color="#f7fbff"/>
+    </linearGradient>
+    <linearGradient id="glass" x2="1" y2="1">
+      <stop stop-color="#aed9ed"/><stop offset="1" stop-color="#457fae"/>
+    </linearGradient>
+    <linearGradient id="side" x2="1" y2="1">
+      <stop stop-color="#739cc9"/><stop offset="1" stop-color="#285e95"/>
+    </linearGradient>
+    <pattern id="windows" width="40" height="45" patternUnits="userSpaceOnUse">
+      <rect x="4" y="5" width="29" height="32" rx="2" fill="url(#glass)"/>
+      <path d="M18.5 5v32" stroke="#d9f0f9" stroke-width="1.4"/>
+    </pattern>
+  </defs>
+  <rect width="720" height="500" rx="22" fill="url(#sky)"/>
+  <circle cx="565" cy="106" r="57" fill="#fff" opacity=".73"/>
+  <path d="M0 295 54 258l41 22 61-49 51 56 66-18 61 25 114-61 57 29 69-37 53 47 93-37v145H0Z" fill="#d6e9f4"/>
+  <path d="M0 366q165-29 341-7t379-26v167H0Z" fill="#dceeea"/>
+  <path d="m120 389 355 1 219 110H34Z" fill="#bacfdf"/>
+  <path d="m270 392 126-5 99 113H190Z" fill="#e9f2f8"/>
+  <path d="m408 396 19-1 100 105h-19Z" fill="#fff" opacity=".63"/>
+  <ellipse cx="395" cy="385" rx="253" ry="28" fill="#315771" opacity=".16"/>
+
+  <path d="m432 151 151 38v180l-151 15Z" fill="url(#side)"/>
+  <path d="m421 143 160 40 12 9-160-33Z" fill="#e8f6fc"/>
+  <path d="m466 192 92 19v105l-92 8Z" fill="#2d638f"/>
+  <path d="m475 198 74 17v91l-74 5Z" fill="url(#glass)"/>
+  <path d="m475 229 74 9m-74 19 74 2m-74 24 74-4m-49-74v102m25-97v95" fill="none" stroke="#d9f4fc" stroke-width="2.4"/>
+
+  <path d="M124 171h325v209H124Z" fill="#f8fcff"/>
+  <path d="M117 162h336v14H117Z" fill="#28527d"/>
+  <path d="M139 191h294v153H139Z" fill="#e4eff8"/>
+  <path d="M142 198h289v132H142Z" fill="url(#windows)"/>
+  <path d="M124 237h325m-325 46h325m-325 46h325" stroke="#fff" stroke-width="8"/>
+  <path d="M224 131h135v249H224Z" fill="#e9f3fb"/>
+  <path d="M216 123h151v13H216Z" fill="#376896"/>
+  <rect x="259" y="153" width="65" height="62" rx="13" fill="#1769e0"/>
+  <path d="M286 165h11v13h13v11h-13v13h-11v-13h-13v-11h13Z" fill="#fff"/>
+  <path d="M242 230h101v69H242Z" fill="url(#glass)"/>
+  <path d="M266 230v69m26-69v69m26-69v69m-75-33h100" stroke="#effaff" stroke-width="3"/>
+
+  <path d="M209 306h172v13H209Z" fill="#16466b"/>
+  <path d="m208 306 22-13h130l21 13Z" fill="#80c9d0"/>
+  <path d="M230 319h130v61H230Z" fill="#244a71"/>
+  <path d="M239 323h112v57H239Z" fill="url(#glass)"/>
+  <path d="M267 323v57m28-57v57m28-57v57m-84-37h112" stroke="#e9f7ff" stroke-width="3"/>
+  <path d="M215 319v61m158-61v61" stroke="#497da5" stroke-width="7"/>
+  <path d="M118 380h337l-12 10H114Z" fill="#8ba8bc"/>
+  <path d="M216 384h155l18 12H203Z" fill="#f7fbff"/>
+
+  <g fill="#39948b">
+    <path d="M85 373c-2-29-10-55-25-74 23 9 35 33 34 70 5-28 18-44 35-49-13 14-19 31-21 53Z"/>
+    <path d="M605 376c0-32 14-58 35-71-12 17-19 40-21 68 12-25 25-32 42-37-13 10-22 24-27 40Z"/>
+  </g>
+  <path d="M64 372h60l-7 17H72zm526 3h66l-8 17h-50z" fill="#4b6984"/>
+  <path d="M500 384v-53m0 3h23" stroke="#244a71" stroke-width="3" stroke-linecap="round"/>
+  <path d="M519 333h12l-3 4h-8Z" fill="#f7fcff"/>
+</svg>

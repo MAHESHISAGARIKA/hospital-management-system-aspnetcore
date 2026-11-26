@@ -21,7 +21,7 @@ else
     {
         var medicine = row.Medicine;
         <tr><td><a asp-action="Medicine" asp-route-id="@medicine.Id">@medicine.Code</a></td>
-            <td>@medicine.GenericName @medicine.BrandName ? @medicine.Strength ? @medicine.Form
+            <td>@medicine.GenericName @medicine.BrandName | @medicine.Strength | @medicine.Form
             @if (User.IsInRole("Pharmacist"))
             { <a asp-action="Inventory" asp-route-medicineId="@medicine.Id" class="d-print-none">Batches</a> }</td>
             <td>@row.Eligible.ToString("0.###") @medicine.Unit</td><td>@medicine.ReorderThreshold.ToString("0.###") @medicine.Unit</td>

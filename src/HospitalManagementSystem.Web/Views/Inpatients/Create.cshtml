@@ -8,7 +8,7 @@
     <input asp-for="Input.RequestKey" type="hidden" /><input asp-for="Input.EncounterId" type="hidden" />
     <label class="col-md-6">Patient <select asp-for="Input.PatientId" class="form-select" required>
     @if (!Model.Input.EncounterId.HasValue) { <option value="">Select patient</option> }
-    @foreach (var patient in Model.Patients) { <option value="@patient.Id">@patient.PatientNumber ? @patient.FirstName @patient.LastName</option> }
+    @foreach (var patient in Model.Patients) { <option value="@patient.Id">@patient.PatientNumber | @patient.FirstName @patient.LastName</option> }
     </select></label>
     <label class="col-md-6">Attending Doctor <select asp-for="Input.DoctorId" class="form-select" required>
     @if (!Model.Input.EncounterId.HasValue) { <option value="">Select Doctor</option> }

@@ -28,7 +28,7 @@
 </div>
 <partial name="_Messages" />
 <div class="card mb-3"><div class="card-body">
-    <p><strong>Patient</strong> @patient.FirstName @patient.LastName ? @patient.PatientNumber</p>
+    <p><strong>Patient</strong> @patient.FirstName @patient.LastName | @patient.PatientNumber</p>
     <p><strong>Requesting doctor</strong> @doctor.FirstName @doctor.LastName</p>
     <p><strong>Requested</strong> @Local(order.CreatedAtUtc) Asia/Colombo</p>
     @if (Model.Print) { <p class="mb-0"><strong>Report generated</strong> @Local(Model.GeneratedAtUtc) Asia/Colombo</p> }
@@ -54,16 +54,16 @@
     var latest = verified.SingleOrDefault(result => !verified.Any(revision => revision.PreviousId == result.Id));
     var samples = Model.Print ? item.Samples.Where(sample => sample.Id == latest?.SampleId) : item.Samples;
     <section class="card lab-item mb-3"><div class="card-body">
-        <h2 class="h5">@item.Code ? @item.Name</h2>
-        <p class="text-muted">Specimen @item.Specimen @if (item.Unit is not null) { <span> ? Unit @item.Unit</span> }</p>
+        <h2 class="h5">@item.Code - @item.Name</h2>
+        <p class="text-muted">Specimen @item.Specimen @if (item.Unit is not null) { <span> | Unit @item.Unit</span> }</p>
         @foreach (var sample in samples.OrderByDescending(sample => sample.CreatedAtUtc))
         {
             var next = sample.Status == LabSampleStatus.Collected ? "Receive" : "Process";
             <div class="border rounded p-2 mb-2">
-                <p class="mb-1 text-break">@sample.Accession ? @sample.Status ? collected @Local(sample.CreatedAtUtc)</p>
+                <p class="mb-1 text-break">@sample.Accession | @sample.Status | collected @Local(sample.CreatedAtUtc)</p>
                 @if (sample.ReceivedAtUtc is DateTime received) { <p class="mb-1">Received @Local(received)</p> }
                 @if (sample.ProcessingAtUtc is DateTime processed) { <p class="mb-1">Processing started @Local(processed)</p> }
-                @if (sample.RejectedAtUtc is DateTime rejected) { <p class="mb-1">Rejected @Local(rejected) ? @sample.RejectionReason</p> }
+                @if (sample.RejectedAtUtc is DateTime rejected) { <p class="mb-1">Rejected @Local(rejected) | @sample.RejectionReason</p> }
                 @if (working && sample.Status is LabSampleStatus.Collected or LabSampleStatus.Received)
                 {
                     <form asp-action="@next" asp-route-id="@order.Id" method="post" class="d-inline-block mb-2" data-lab-form>
@@ -110,9 +110,9 @@
                 </p>
                 <p class="text-muted mb-1">Entered @Local(result.CreatedAtUtc)</p>
                 @if (result.SubmittedAtUtc is DateTime submitted) { <p class="mb-1">Submitted @Local(submitted)</p> }
-                @if (result.VerifiedAtUtc is DateTime signed) { <p class="mb-1">Verified by @result.VerifierName ? @Local(signed)</p> }
+                @if (result.VerifiedAtUtc is DateTime signed) { <p class="mb-1">Verified by @result.VerifierName | @Local(signed)</p> }
                 @if (result.Note is not null) { <p class="text-break mb-1">@result.Note</p> }
-                @if (result.AmendmentReason is not null) { <p class="text-break mb-1">Correction reason ? @result.AmendmentReason</p> }
+                @if (result.AmendmentReason is not null) { <p class="text-break mb-1">Correction reason | @result.AmendmentReason</p> }
                 @if (working && result.Status != LabResultStatus.Verified)
                 {
                     var action = result.Status == LabResultStatus.Draft ? "Submit" : "Verify";

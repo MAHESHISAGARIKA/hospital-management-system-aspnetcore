@@ -3,8 +3,8 @@
 <h1 class="h3">Stock adjustment</h1>
 <partial name="_Links" /><partial name="_Messages" />
 <div class="card mb-3"><div class="card-body">
-    <h2 class="h5">@Model.Medicine.GenericName ? @Model.Number</h2>
-    <p class="mb-0">Balance @Model.Available.ToString("0.###") @Model.Unit ? @Model.Status ? expiry @Model.Expiry.ToString("dd MMM yyyy")</p>
+    <h2 class="h5">@Model.Medicine.GenericName - @Model.Number</h2>
+    <p class="mb-0">Balance @Model.Available.ToString("0.###") @Model.Unit | @Model.Status | expiry @Model.Expiry.ToString("dd MMM yyyy")</p>
 </div></div>
 <form asp-action="Adjust" asp-route-id="@Model.Id" method="post" data-pharmacy-form data-confirm="Record this inventory change?" class="row g-3">
     <input type="hidden" name="Token" value="@Model.ConcurrencyToken" />

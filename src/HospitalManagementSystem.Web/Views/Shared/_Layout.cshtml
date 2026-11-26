@@ -23,7 +23,7 @@
         <aside id="workspace-navigation" class="offcanvas-lg offcanvas-start hms-sidebar d-print-none" tabindex="-1" aria-labelledby="workspace-navigation-title">
             <div class="hms-sidebar-header">
                 <a class="hms-brand" asp-controller="Dashboard" asp-action="Index" id="workspace-navigation-title">
-                    <span class="hms-brand-mark" aria-hidden="true">+</span><span>Hospital Management<br />System</span>
+                    <span class="hms-brand-mark"><partial name="_Icon" model="@("cross")" /></span><span>Hospital Management<br />System</span>
                 </a>
                 <button class="btn-close btn-close-white d-lg-none" type="button" data-bs-dismiss="offcanvas" data-bs-target="#workspace-navigation" aria-label="Close navigation"></button>
             </div>
@@ -35,28 +35,28 @@
                 <div class="hms-topbar-start">
                 @if (signedIn)
                 {
-                    <button class="btn hms-menu-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#workspace-navigation" aria-controls="workspace-navigation" aria-label="Open navigation"><span aria-hidden="true">?</span></button>
-                    <button class="btn hms-menu-button d-none d-lg-inline-flex" type="button" data-sidebar-toggle aria-controls="workspace-navigation" aria-expanded="true" aria-label="Collapse navigation"><span aria-hidden="true">?</span></button>
+                    <button class="btn hms-menu-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#workspace-navigation" aria-controls="workspace-navigation" aria-label="Open navigation"><partial name="_Icon" model="@("menu")" /></button>
+                    <button class="btn hms-menu-button d-none d-lg-inline-flex" type="button" data-sidebar-toggle aria-controls="workspace-navigation" aria-expanded="true" aria-label="Collapse navigation"><partial name="_Icon" model="@("menu")" /></button>
                     <span class="hms-topbar-location">@(currentController is "Dashboard" ? "Overview" : ViewData["Title"])</span>
                 }
                 else
                 {
-                    <a class="hms-brand" asp-controller="Home" asp-action="Index"><span class="hms-brand-mark" aria-hidden="true">+</span><span>Hospital Management System</span></a>
+                    <a class="hms-brand" asp-controller="Home" asp-action="Index"><span class="hms-brand-mark"><partial name="_Icon" model="@("cross")" /></span><span>Hospital Management System</span></a>
                 }
                 </div>
                 @if (signedIn)
                 {
                     <div class="hms-topbar-account">
                         <div class="dropdown">
-                            <button class="btn hms-profile dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account settings">
-                                <span class="hms-avatar" aria-hidden="true">@initial</span><span class="hms-profile-name">@accountName</span>
+                            <button class="btn hms-profile dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account settings for @accountName">
+                                <span class="hms-avatar" aria-hidden="true">@initial</span><span class="hms-profile-name" title="@accountName">@accountName</span>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">Change password</a></li>
                             </ul>
                         </div>
                         <form asp-controller="Account" asp-action="Logout" method="post" class="mb-0">
-                            <button type="submit" class="btn btn-outline-secondary btn-sm">Logout</button>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm hms-icon-button"><partial name="_Icon" model="@("logout")" /> Logout</button>
                         </form>
                     </div>
                 }
