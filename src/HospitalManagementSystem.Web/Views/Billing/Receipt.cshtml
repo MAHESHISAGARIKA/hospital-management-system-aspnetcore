@@ -1,6 +1,6 @@
 @model PatientPayment
 @{ ViewData["Title"] = "Payment receipt"; }
-<h1 class="h3">Hospital Management System ? Payment receipt</h1>
+<h1 class="h3">Hospital Management System - Payment receipt</h1>
 <partial name="_Links" /><partial name="_Print" />
 @if (Model.Reversal is not null)
 {
@@ -9,7 +9,7 @@
 <dl class="row">
     <dt class="col-sm-4">Receipt number</dt><dd class="col-sm-8 text-break">@Model.ReceiptNumber</dd>
     <dt class="col-sm-4">Invoice number</dt><dd class="col-sm-8 text-break"><a asp-action="Details" asp-route-id="@Model.InvoiceId">@Model.Invoice.Number</a></dd>
-    <dt class="col-sm-4">Patient</dt><dd class="col-sm-8">@Model.Invoice.PatientReference ? @Model.Invoice.PatientLabel</dd>
+    <dt class="col-sm-4">Patient</dt><dd class="col-sm-8">@Model.Invoice.PatientReference | @Model.Invoice.PatientLabel</dd>
     <dt class="col-sm-4">Received amount</dt><dd class="col-sm-8">LKR @Model.Amount.ToString("N2")</dd>
     <dt class="col-sm-4">Method</dt><dd class="col-sm-8">@(Model.Method == BillingPaymentMethod.Cash ? "Cash" : "Bank transfer")</dd>
     <dt class="col-sm-4">Payment time</dt><dd class="col-sm-8">@AppointmentService.ToColombo(Model.RecordedAtUtc).ToString("dd MMM yyyy HH:mm") Asia/Colombo</dd>

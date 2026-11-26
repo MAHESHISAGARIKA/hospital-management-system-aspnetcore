@@ -28,7 +28,7 @@ else
     <div class="table-responsive"><table class="table"><thead><tr><th>Admission</th><th>Patient</th><th>Doctor</th><th>Ward / bed</th><th>Status</th><th>Recorded (Asia/Colombo)</th><th>Length of stay</th></tr></thead><tbody>
     @foreach (var row in Model.Rows)
     {
-        <tr><td><a asp-action="Details" asp-route-id="@row.Id">@row.Number</a></td><td>@row.PatientNumber ? @row.PatientName</td>
+        <tr><td><a asp-action="Details" asp-route-id="@row.Id">@row.Number</a></td><td>@row.PatientNumber | @row.PatientName</td>
         <td>@row.DoctorName</td><td>@row.CurrentBed</td><td>@row.Status</td>
         <td>@AppointmentService.ToColombo((filter.Status == AdmissionStatus.Discharged ? row.DischargedAtUtc : row.AdmittedAtUtc) ?? row.CreatedAtUtc).ToString("dd MMM yyyy HH:mm")</td>
         <td>@(row.AdmittedAtUtc.HasValue && row.DischargedAtUtc.HasValue ? $"{(row.DischargedAtUtc.Value - row.AdmittedAtUtc.Value).TotalHours:0.0} h" : "?")</td></tr>

@@ -16,7 +16,7 @@
 @foreach (var test in Model)
 {
     <details class="card mb-2">
-        <summary class="card-header">@test.Code ? @test.Name <span class="badge text-bg-light border">@(test.Active ? "Active" : "Inactive")</span></summary>
+        <summary class="card-header">@test.Code | @test.Name <span class="badge text-bg-light border">@(test.Active ? "Active" : "Inactive")</span></summary>
         <partial name="_CatalogForm" model="test" />
     </details>
 }

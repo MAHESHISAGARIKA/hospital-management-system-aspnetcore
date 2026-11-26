@@ -1,15 +1,15 @@
 @model PrescriptionDispense
 @{ ViewData["Title"] = "Dispensing record"; }
 <h1 class="h3">Dispensing record</h1>
-<p class="text-break">@Model.Number ? @(Model.IsPartial ? "Partial" : "Complete")</p>
-<p>@Model.Prescription.Encounter.Patient.FirstName @Model.Prescription.Encounter.Patient.LastName ? @Model.Prescription.Encounter.Patient.PatientNumber</p>
+<p class="text-break">@Model.Number | @(Model.IsPartial ? "Partial" : "Complete")</p>
+<p>@Model.Prescription.Encounter.Patient.FirstName @Model.Prescription.Encounter.Patient.LastName | @Model.Prescription.Encounter.Patient.PatientNumber</p>
 <p>Prescriber Dr. @Model.Prescription.Encounter.Doctor.FirstName @Model.Prescription.Encounter.Doctor.LastName</p>
 <p>Dispensed @AppointmentService.ToColombo(Model.OccurredAtUtc).ToString("dd MMM yyyy HH:mm") Asia/Colombo</p>
 <partial name="_Print" />
 <div class="table-responsive"><table class="table"><thead><tr><th>Medicine</th><th>Batch</th><th>Quantity</th></tr></thead><tbody>
 @foreach (var line in Model.Lines)
 {
-    <tr><td>@line.Batch.Medicine.GenericName ? @line.Batch.Medicine.Strength</td><td>@line.Batch.Number</td><td>@line.Quantity.ToString("0.###") @line.Batch.Unit</td></tr>
+    <tr><td>@line.Batch.Medicine.GenericName | @line.Batch.Medicine.Strength</td><td>@line.Batch.Number</td><td>@line.Quantity.ToString("0.###") @line.Batch.Unit</td></tr>
 }
 </tbody></table></div>
 <a asp-action="History" class="btn btn-outline-secondary d-print-none">Dispensing history</a>

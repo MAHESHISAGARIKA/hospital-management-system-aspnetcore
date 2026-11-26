@@ -3,23 +3,28 @@
 }
 <section class="hms-hero" aria-labelledby="home-heading">
     <div class="hms-hero-copy">
-        <h1 id="home-heading">Hospital<br class="d-none d-md-block" /> Management System</h1>
-        <p>Manage patient care, appointments, and hospital operations in one secure workspace.</p>
+        <span class="hms-hero-badge"><partial name="_Icon" model="@("cross")" /> Healthcare workspace</span>
+        <h1 id="home-heading">Hospital Management System</h1>
+        <p class="hms-hero-subtitle">A secure and connected workspace for modern hospital operations.</p>
+        <p>Manage patient care, appointments, clinical records, staff, laboratory services, pharmacy, billing and reporting through one streamlined platform.</p>
         @if (User.Identity?.IsAuthenticated == true)
         {
-            <a class="btn btn-primary btn-lg" asp-controller="Dashboard" asp-action="Index">Open dashboard <span aria-hidden="true">?</span></a>
+            <a class="btn btn-primary btn-lg hms-icon-button" asp-controller="Dashboard" asp-action="Index">Open Dashboard <partial name="_Icon" model="@("arrow")" /></a>
         }
         else
         {
-            <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Login">Sign in <span aria-hidden="true">?</span></a>
+            <a class="btn btn-primary btn-lg hms-icon-button" asp-controller="Account" asp-action="Login">Sign in <partial name="_Icon" model="@("arrow")" /></a>
         }
     </div>
-    <div class="hms-hero-panel">
-        <h2>Hospital workflows</h2>
-        <ul class="list-unstyled mb-0">
-            <li><span class="hms-feature-icon" aria-hidden="true">?</span><div><strong>Patient care</strong><p>Patient records, appointments, and clinical visits</p></div></li>
-            <li><span class="hms-feature-icon" aria-hidden="true">?</span><div><strong>Laboratory and pharmacy</strong><p>Lab requests, medicine inventory, and dispensing</p></div></li>
-            <li><span class="hms-feature-icon" aria-hidden="true">?</span><div><strong>Hospital operations</strong><p>Staff, billing, inpatient care, and reporting</p></div></li>
-        </ul>
+    <img class="hms-hero-image" src="~/images/hospital-entrance.svg" asp-append-version="true"
+         alt="Illustration of a modern hospital entrance with blue glass and landscaped grounds"
+         width="720" height="500" fetchpriority="high" />
+</section>
+<section class="hms-workflows" aria-labelledby="workflows-heading">
+    <h2 id="workflows-heading">Hospital workflows</h2>
+    <div class="hms-workflow-grid">
+        <article><span class="hms-feature-icon"><partial name="_Icon" model="@("stethoscope")" /></span><div><h3>Patient care</h3><p>Patient records, appointments and clinical visits.</p></div></article>
+        <article><span class="hms-feature-icon"><partial name="_Icon" model="@("flask")" /></span><div><h3>Laboratory and pharmacy</h3><p>Lab requests, medicine inventory and dispensing.</p></div></article>
+        <article><span class="hms-feature-icon"><partial name="_Icon" model="@("building")" /></span><div><h3>Hospital operations</h3><p>Staff, inpatient care, billing and reporting.</p></div></article>
     </div>
 </section>

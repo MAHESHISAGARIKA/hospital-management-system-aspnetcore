@@ -18,7 +18,7 @@
 }
 @if (bed is not null)
 {
-    <section class="mt-4"><h2 class="h5">@bed.Ward.Code ? @bed.Label ? Allocation history</h2>
+    <section class="mt-4"><h2 class="h5">@bed.Ward.Code / @bed.Label - Allocation history</h2>
     @if (bed.Allocations.Count == 0) { <p class="hms-empty">No allocations recorded.</p> }
     @foreach (var item in bed.Allocations.OrderByDescending(a => a.StartedAtUtc))
     {

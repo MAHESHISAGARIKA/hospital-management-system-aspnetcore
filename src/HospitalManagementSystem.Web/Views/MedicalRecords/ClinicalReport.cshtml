@@ -45,7 +45,7 @@
         {
             var day = DateOnly.FromDateTime(AppointmentService.ToColombo(stay.AdmittedAtUtc ?? stay.CreatedAtUtc));
             if (Model.From.HasValue && day < Model.From.Value || Model.To.HasValue && day > Model.To.Value) continue;
-            <p><a asp-controller="Inpatients" asp-action="Details" asp-route-id="@stay.Id">@stay.Number</a> ? @stay.Status ? @day.ToString("dd MMM yyyy")</p>
+            <p><a asp-controller="Inpatients" asp-action="Details" asp-route-id="@stay.Id">@stay.Number</a> | @stay.Status | @day.ToString("dd MMM yyyy")</p>
         }
         @if (admissions.Length == 0) { <p class="hms-empty">No assigned inpatient stays.</p> }
         </section>
@@ -57,7 +57,7 @@
             .OrderByDescending(record => record.RecordedDate).ThenByDescending(record => record.CreatedAtUtc))
         {
             <li class="list-group-item">
-                <a href="#record-@entry.Id">@entry.RecordedDate.ToString("dd MMM yyyy") ? @entry.Kind</a>
+                <a href="#record-@entry.Id">@entry.RecordedDate.ToString("dd MMM yyyy") | @entry.Kind</a>
                 <span class="badge text-bg-light border">@entry.Status</span>
             </li>
         }
@@ -80,9 +80,9 @@
         <div class="card-body">
             <div class="d-flex flex-wrap gap-2 align-items-start justify-content-between mb-3">
                 <div>
-                    <h2 class="h5">@encounter.Patient.FirstName @encounter.Patient.LastName ? @encounter.Patient.PatientNumber</h2>
+                    <h2 class="h5">@encounter.Patient.FirstName @encounter.Patient.LastName - @encounter.Patient.PatientNumber</h2>
                     <p class="mb-1">Dr. @encounter.Doctor.FirstName @encounter.Doctor.LastName</p>
-                    <p class="text-muted mb-0">@AppointmentService.ToColombo(encounter.CreatedAtUtc).ToString("dd MMM yyyy HH:mm") Asia/Colombo ? @(closed ? "Finalized encounter" : "Open encounter")</p>
+                    <p class="text-muted mb-0">@AppointmentService.ToColombo(encounter.CreatedAtUtc).ToString("dd MMM yyyy HH:mm") Asia/Colombo | @(closed ? "Finalized encounter" : "Open encounter")</p>
                 </div>
                 <div class="d-print-none d-flex flex-wrap gap-2">
                     @if (manage)
@@ -135,7 +135,7 @@
                         if (Model.From.HasValue && localDate < Model.From.Value || Model.To.HasValue && localDate > Model.To.Value)
                             continue;
                         <div class="d-flex flex-wrap gap-2 mt-2">
-                            <a asp-controller="Laboratory" asp-action="Details" asp-route-id="@order.Id">@localDate.ToString("dd MMM yyyy") ? @order.Number</a>
+                            <a asp-controller="Laboratory" asp-action="Details" asp-route-id="@order.Id">@localDate.ToString("dd MMM yyyy") | @order.Number</a>
                             <span class="badge text-bg-light border">@order.Status</span>
                             @if (order.Status == LabOrderStatus.Completed)
                             {
@@ -163,7 +163,7 @@
                     <p class="text-muted small mb-2">@record.RecordedDate.ToString("dd MMM yyyy")
                         @if (record.FinalizedAtUtc is DateTime finalized)
                         {
-                            <span> ? Signed @AppointmentService.ToColombo(finalized).ToString("dd MMM yyyy HH:mm") Asia/Colombo</span>
+                            <span> | Signed @AppointmentService.ToColombo(finalized).ToString("dd MMM yyyy HH:mm") Asia/Colombo</span>
                         }
                     </p>
                     @if (ViewData["DispensingStatuses"] is IReadOnlyDictionary<Guid, string> statuses && statuses.TryGetValue(record.Id, out var dispensing))
@@ -189,8 +189,8 @@
                             {
                                 <li class="list-group-item px-0 text-break">
                                     <strong>@item.Medicine @item.Strength</strong>
-                                    <span> ? @item.Dose @item.DoseUnit ? @item.Route ? @item.Frequency ? @item.Duration</span>
-                                    @if (item.Quantity.HasValue) { <span> ? Quantity @item.Quantity @item.DispenseUnit</span> }
+                                    <span> | @item.Dose @item.DoseUnit | @item.Route | @item.Frequency | @item.Duration</span>
+                                    @if (item.Quantity.HasValue) { <span> | Quantity @item.Quantity @item.DispenseUnit</span> }
                                     @if (item.Instructions is not null) { <p class="mb-0">@item.Instructions</p> }
                                 </li>
                             }

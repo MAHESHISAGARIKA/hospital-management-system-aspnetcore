@@ -2,4 +2,4 @@
     var active = Context.Request.Path.StartsWithSegments("/Staff");
 }
 <li><a class="hms-nav-link @(active ? "is-active" : "")" aria-current="@(active ? "location" : null)" href="/Staff/My">
-    <span class="hms-nav-icon" aria-hidden="true">?</span>My staff records</a></li>
+    <span class="hms-nav-icon"><partial name="_Icon" model="@("users")" /></span>My staff records</a></li>

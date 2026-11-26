@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using HospitalManagementSystem.Web.Data;
 using HospitalManagementSystem.Web.Models;
+using HospitalManagementSystem.Web.Models.ViewModels;
 using HospitalManagementSystem.Web.Services.Appointments;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +13,13 @@ public sealed class StaffService(HospitalDbContext db, IAuditLogService audit, T
 {
     public DateTime Now => clock.GetUtcNow().UtcDateTime;
     public DateOnly Today => DateOnly.FromDateTime(AppointmentService.ToColombo(Now));
+
+    public static IQueryable<StaffDepartmentCount> CurrentDepartmentCounts(HospitalDbContext database)
+        => database.Set<StaffDepartment>().AsNoTracking()
+            .Where(assignment => assignment.UntilUtc == null)
+            .GroupBy(assignment => assignment.Department.Name)
+            .OrderBy(group => group.Key)
+            .Select(group => new StaffDepartmentCount(group.Key, group.Count()));
 
     public async Task<Guid> Actor(ClaimsPrincipal user, bool admin, CancellationToken ct)
     {

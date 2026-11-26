@@ -51,22 +51,31 @@ a { text-underline-offset: .18em; }
 .hms-topbar-account { flex-shrink: 0; }
 .hms-topbar-location { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 680; }
 .hms-menu-button { align-items: center; justify-content: center; width: 2.45rem; height: 2.45rem; padding: 0; flex-shrink: 0; color: var(--hms-navy); border: 1px solid var(--hms-line); }
-.hms-profile { max-width: 15rem; display: flex; align-items: center; gap: .5rem; padding: .2rem .4rem; color: var(--hms-navy); }
-.hms-profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .86rem; }
+.hms-profile { max-width: min(15rem, 37vw); min-width: 0; display: flex; align-items: center; gap: .5rem; padding: .2rem .4rem; color: var(--hms-navy); }
+.hms-profile-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .86rem; }
 .hms-avatar { display: inline-grid; place-items: center; width: 2rem; height: 2rem; flex-shrink: 0; border-radius: 50%; color: #174789; background: #e4efff; font-weight: 700; }
 .hms-footer { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem clamp(1rem, 3vw, 2.5rem); border-top: 1px solid var(--hms-line); font-size: .82rem; color: var(--hms-muted); }
 
 .hms-public .hms-content { max-width: 78rem; }
-.hms-hero { min-height: clamp(26rem, 66vh, 42rem); display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: clamp(1.8rem, 5vw, 5rem); align-items: center; padding: clamp(1.4rem, 5vw, 5rem); border: 1px solid #deebfc; border-radius: 1.45rem; background: radial-gradient(ellipse at 90% 12%, #d4f6f1, transparent 43%), linear-gradient(132deg, #faffff, #e8f1ff 78%); }
-.hms-hero .hms-hero-copy h1 { font-size: clamp(2.35rem, 5.6vw, 5rem); line-height: 1.01; letter-spacing: -.062em; max-width: 10ch; }
-.hms-hero-copy p { color: var(--hms-muted); font-size: clamp(1rem, 2vw, 1.2rem); max-width: 36ch; margin: 1.2rem 0 1.55rem; }
-.hms-hero-panel { background: white; border: 1px solid var(--hms-line); border-radius: 1.25rem; padding: clamp(1.1rem, 3vw, 2.15rem); box-shadow: 0 20px 55px rgba(20, 43, 73, .13); }
-.hms-hero-panel h2 { font-size: 1.22rem; font-weight: 720; margin-bottom: 1rem; }
-.hms-hero-panel li { display: flex; gap: .8rem; align-items: center; padding: .95rem 0; }
-.hms-hero-panel li + li { border-top: 1px solid var(--hms-line); }
-.hms-hero-panel p { margin: .18rem 0 0; color: var(--hms-muted); font-size: .9rem; }
-.hms-feature-icon { display: grid; place-items: center; width: 2.65rem; height: 2.65rem; flex: 0 0 2.65rem; border-radius: .75rem; background: #e6f1ff; color: #235cad; font-size: 1.15rem; }
-.hms-hero-panel li:nth-child(2) .hms-feature-icon { background: #dff6f2; color: #11645d; }
+.hms-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(1.4rem, 4vw, 3.3rem); align-items: center; padding: clamp(1rem, 3.4vw, 3.2rem); border: 1px solid #dce7f4; border-radius: 1.4rem; background: #fff; }
+.hms-hero-badge { display: inline-flex; gap: .4rem; align-items: center; padding: .34rem .65rem; margin-bottom: .85rem; border-radius: 999px; background: #e3f6f2; color: #175c56; font-size: .79rem; font-weight: 700; }
+.hms-hero .hms-hero-copy h1 { font-size: clamp(2rem, 4.2vw, 4rem); line-height: 1.04; letter-spacing: -.055em; max-width: 13ch; }
+.hms-hero-copy p { color: var(--hms-muted); max-width: 45ch; margin: .8rem 0 1rem; }
+.hms-hero-copy .hms-hero-subtitle { font-size: clamp(1rem, 1.6vw, 1.25rem); color: var(--hms-navy); font-weight: 660; }
+.hms-hero-image { display: block; width: 100%; height: auto; max-width: 46rem; border-radius: 1rem; }
+.hms-workflows { margin-top: 1.35rem; }
+.hms-workflows h2 { font-size: 1.18rem; margin-bottom: .8rem; font-weight: 720; }
+.hms-workflow-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+.hms-workflow-grid article { display: flex; align-items: flex-start; gap: .72rem; padding: .9rem; border: 1px solid var(--hms-line); border-radius: .8rem; background: white; }
+.hms-workflow-grid h3 { font-size: .95rem; margin: 0 0 .3rem; font-weight: 700; }
+.hms-workflow-grid p { color: var(--hms-muted); margin: 0; font-size: .86rem; }
+.hms-feature-icon { display: grid; place-items: center; width: 2.4rem; height: 2.4rem; flex: 0 0 2.4rem; border-radius: .68rem; background: #e6f1ff; color: #235cad; }
+.hms-workflow-grid article:nth-child(2) .hms-feature-icon { background: #dff6f2; color: #11645d; }
+.hms-icon { display: inline-block; width: 1.12rem; height: 1.12rem; flex: none; vertical-align: -.15em; }
+.hms-brand-mark .hms-icon { width: 1.45rem; height: 1.45rem; stroke-width: 1.9; }
+.hms-icon-button { display: inline-flex; align-items: center; justify-content: center; gap: .4em; }
+.hms-hero-badge .hms-icon { width: .95rem; height: .95rem; }
+
 .hms-login-wrap { display: grid; place-items: center; min-height: min(68vh, 44rem); padding-block: 1rem; }
 .hms-login { width: min(100%, 28rem); padding: clamp(1.25rem, 5vw, 2.2rem); }
 .hms-login h1 { margin-top: .8rem; }
@@ -124,6 +133,7 @@ a { text-underline-offset: .18em; }
 @media (max-width: 767.98px) {
   .hms-hero { grid-template-columns: minmax(0, 1fr); min-height: unset; }
   .hms-profile-name { display: none; }
+  .hms-workflow-grid { grid-template-columns: minmax(0, 1fr); }
   .hms-content .table :is(th,td) { padding: .55rem .65rem; }
   .hms-content .hms-filter { gap: .5rem; }
 }

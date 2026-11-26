@@ -38,6 +38,6 @@ else
                 asp-route-status="@Model.Status" class="btn btn-sm btn-outline-secondary">@link.Item1</a>
         }
     }
-    <span>Page @Model.Page of @pages ? @Model.TotalCount visits</span></nav>
+    <span>Page @Model.Page of @pages | @Model.TotalCount visits</span></nav>
 }
 @section Scripts { <script src="~/js/stays.js" asp-append-version="true"></script> }

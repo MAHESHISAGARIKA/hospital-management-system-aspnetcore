@@ -7,9 +7,9 @@
     <a asp-controller="Appointments" asp-action="Details" asp-route-id="@visit.Id" class="btn btn-outline-secondary">Appointment and check-in status</a>
 </div>
 <partial name="~/Views/Inpatients/_Print.cshtml" />
-<p>@visit.AppointmentNumber ? @visit.Status</p>
-<p>@visit.Patient.PatientNumber ? @visit.Patient.FirstName @visit.Patient.LastName</p>
-<p>Dr. @visit.Doctor.FirstName @visit.Doctor.LastName ? @visit.Department.Name</p>
+<p>@visit.AppointmentNumber | @visit.Status</p>
+<p>@visit.Patient.PatientNumber | @visit.Patient.FirstName @visit.Patient.LastName</p>
+<p>Dr. @visit.Doctor.FirstName @visit.Doctor.LastName | @visit.Department.Name</p>
 <p>@AppointmentService.ToColombo(visit.StartAtUtc).ToString("dd MMM yyyy HH:mm") Asia/Colombo</p>
 @if (Model.Clinical && Model.EncounterId is Guid encounter)
 {

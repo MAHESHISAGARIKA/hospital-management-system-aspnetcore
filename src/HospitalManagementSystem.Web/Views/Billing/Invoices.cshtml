@@ -31,7 +31,7 @@ else
     {
         var status = row.Status != InvoiceStatus.Issued ? row.Status.ToString() :
             row.Total == row.Paid ? "Paid" : row.Paid == 0 ? "Unpaid" : "Partially paid";
-        <tr><td><a asp-action="Details" asp-route-id="@row.Id">@(row.Number ?? "Draft")</a></td><td>@row.Reference ? @row.Patient</td>
+        <tr><td><a asp-action="Details" asp-route-id="@row.Id">@(row.Number ?? "Draft")</a></td><td>@row.Reference | @row.Patient</td>
             <td>@AppointmentService.ToColombo(row.IssuedAtUtc ?? row.CreatedAtUtc).ToString("dd MMM yyyy")</td><td>@status</td>
             <td>@row.Total.ToString("N2")</td><td>@(row.Status == InvoiceStatus.Issued ? (row.Total - row.Paid).ToString("N2") : "?")</td></tr>
     }

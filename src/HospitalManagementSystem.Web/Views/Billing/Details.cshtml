@@ -6,21 +6,21 @@
     var state = invoice.Status != InvoiceStatus.Issued ? invoice.Status.ToString() :
         Model.Balance == 0 ? "Paid" : Model.Paid == 0 ? "Unpaid" : "Partially paid";
 }
-<h1 class="h3">@(print ? "Hospital Management System ? Invoice" : "Patient invoice")</h1>
+<h1 class="h3">@(print ? "Hospital Management System - Invoice" : "Patient invoice")</h1>
 @if (!print) { <partial name="_Links" /> }
 else { <partial name="_Print" /> }
 <p class="text-break">@invoice.Number <span class="badge text-bg-light border">@state</span></p>
-<p>Patient @(invoice.PatientReference ?? invoice.Patient.PatientNumber) ? @(invoice.PatientLabel ?? $"{invoice.Patient.FirstName} {invoice.Patient.LastName}")</p>
+<p>Patient @(invoice.PatientReference ?? invoice.Patient.PatientNumber) | @(invoice.PatientLabel ?? $"{invoice.Patient.FirstName} {invoice.Patient.LastName}")</p>
 @if (invoice.IssuedAtUtc is DateTime issued)
 { <p>Issued @AppointmentService.ToColombo(issued).ToString("dd MMM yyyy HH:mm") Asia/Colombo</p> }
 @if (invoice.ReplacesId.HasValue)
 { <p><a asp-action="Details" asp-route-id="@invoice.ReplacesId">Original voided invoice</a></p> }
 <p>Service date @invoice.ServiceDate.ToString("dd MMM yyyy") Asia/Colombo</p>
-@if (invoice.VoidReason is not null && !print) { <p class="text-break">Void reason ? @invoice.VoidReason</p> }
+@if (invoice.VoidReason is not null && !print) { <p class="text-break">Void reason | @invoice.VoidReason</p> }
 <div class="table-responsive"><table class="table"><thead><tr><th>Service</th><th>Quantity</th><th>Unit price (LKR)</th><th>Line total (LKR)</th></tr></thead><tbody>
 @foreach (var line in invoice.Items)
 {
-    <tr><td>@line.Code ? @line.Name</td><td>@line.Quantity.ToString("0.###")</td><td>@line.UnitPrice.ToString("N2")</td><td>@line.Total.ToString("N2")</td></tr>
+    <tr><td>@line.Code | @line.Name</td><td>@line.Quantity.ToString("0.###")</td><td>@line.UnitPrice.ToString("N2")</td><td>@line.Total.ToString("N2")</td></tr>
 }
 </tbody></table></div>
 <div class="card mb-3"><div class="card-body">

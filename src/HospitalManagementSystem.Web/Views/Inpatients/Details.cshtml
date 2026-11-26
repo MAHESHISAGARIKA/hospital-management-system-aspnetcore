@@ -10,12 +10,12 @@
 @if (Model.Print) { <partial name="_Print" /> }
 else { <partial name="_Navigation" /> }
 <p class="text-break">@stay.Number <span class="badge text-bg-light border">@stay.Status</span></p>
-<p>@stay.Patient.PatientNumber ? @stay.Patient.FirstName @stay.Patient.LastName ? Dr. @stay.Doctor.FirstName @stay.Doctor.LastName</p>
+<p>@stay.Patient.PatientNumber | @stay.Patient.FirstName @stay.Patient.LastName | Dr. @stay.Doctor.FirstName @stay.Doctor.LastName</p>
 <p>Registered @Local(stay.CreatedAtUtc) Asia/Colombo
-@if (stay.AdmittedAtUtc is DateTime admitted) { <span> ? Admitted @Local(admitted)</span> }
+@if (stay.AdmittedAtUtc is DateTime admitted) { <span> | Admitted @Local(admitted)</span> }
 </p>
 @if (Model.Doctor && !Model.Print && !string.IsNullOrWhiteSpace(stay.Reason))
-{ <p class="text-break">Admission reason ? @stay.Reason</p> }
+{ <p class="text-break">Admission reason | @stay.Reason</p> }
 @if (Model.Doctor && stay.OriginEncounterId.HasValue)
 {
     <section class="card mb-3"><div class="card-body"><h2 class="h5">Linked outpatient clinical records</h2>
@@ -35,7 +35,7 @@ else { <partial name="_Navigation" /> }
 {
     <section class="card mb-3"><div class="card-body">
         <h2 class="h5">Signed discharge</h2>
-        <p>@discharge.Disposition ? @Local(discharge.SignedAtUtc) Asia/Colombo</p>
+        <p>@discharge.Disposition | @Local(discharge.SignedAtUtc) Asia/Colombo</p>
         <p><strong>Discharge diagnosis</strong></p><p class="text-break" style="white-space:pre-wrap">@discharge.Diagnosis</p>
         <p><strong>Treatment and discharge summary</strong></p><p class="text-break" style="white-space:pre-wrap">@discharge.Summary</p>
         @if (!Model.Print) { <a asp-action="Summary" asp-route-id="@stay.Id" class="btn btn-outline-primary">Print discharge summary</a> }
@@ -104,7 +104,7 @@ else
         </form>
         @foreach (var assignment in stay.Assignments.OrderByDescending(a => a.AssignedAtUtc))
         {
-            <p>@(Model.Nurses.SingleOrDefault(nurse => nurse.Id == assignment.NurseUserId)?.UserName ?? assignment.NurseUserId.ToString()) ? @Local(assignment.AssignedAtUtc) ? @(assignment.EndedAtUtc.HasValue ? "Ended" : "Active")</p>
+            <p>@(Model.Nurses.SingleOrDefault(nurse => nurse.Id == assignment.NurseUserId)?.UserName ?? assignment.NurseUserId.ToString()) | @Local(assignment.AssignedAtUtc) | @(assignment.EndedAtUtc.HasValue ? "Ended" : "Active")</p>
             @if (!assignment.EndedAtUtc.HasValue)
             {
                 <form asp-action="EndAssignment" asp-route-id="@stay.Id" method="post" class="mb-3" data-stay-form>
@@ -124,7 +124,7 @@ else
         {
             var superseded = stay.Observations.Any(o => o.CorrectsId == value.Id);
             <div class="border-top py-2">
-                <strong>@value.Kind ? @value.Value.ToString("0.##")</strong> ? @Local(value.RecordedAtUtc) @(superseded ? "? Historical" : "")
+                <strong>@value.Kind | @value.Value.ToString("0.##")</strong> | @Local(value.RecordedAtUtc) @(superseded ? "| Historical" : "")
                 @if (value.CorrectionReason is not null) { <p>@value.CorrectionReason</p> }
                 @if (canWork && !superseded && (Model.Doctor || value.RecordedByUserId.ToString() == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value))
                 { <details><summary>Correct observation</summary><partial name="_Observation" model="(stay.Id, stay.Token, (InpatientObservation?)value)" /></details> }

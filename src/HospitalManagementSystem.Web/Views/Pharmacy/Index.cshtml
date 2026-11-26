@@ -27,7 +27,7 @@
         @if (Model.Recent.Count == 0) { <p class="hms-empty">No stock movements.</p> }
         @foreach (var movement in Model.Recent)
         {
-            <div class="border-bottom py-2">@movement.Batch.Medicine.GenericName ? @movement.Kind ? @movement.Quantity.ToString("0.###") @movement.Unit</div>
+            <div class="border-bottom py-2">@movement.Batch.Medicine.GenericName | @movement.Kind | @movement.Quantity.ToString("0.###") @movement.Unit</div>
         }
     </section>
 </div>

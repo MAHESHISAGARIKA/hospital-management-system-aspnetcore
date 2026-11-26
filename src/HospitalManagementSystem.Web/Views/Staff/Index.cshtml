@@ -7,6 +7,10 @@
     var employee = Model.Selected;
     var choices = (Department[])ViewData["DepartmentChoices"]!;
     string Local(DateTime at) => AppointmentService.ToColombo(at).ToString("yyyy-MM-dd HH:mm");
+    var departmentCounts = ViewData["StaffDepartmentCounts"] as StaffDepartmentCount[] ?? [];
+    var totalCounts = ViewData["StaffCounts"] as IReadOnlyDictionary<string, int>;
+    var emptyDirectory = totalCounts is not null &&
+        totalCounts["Active employees"] == 0 && totalCounts["Inactive employees"] == 0;
     var today = DateOnly.FromDateTime(AppointmentService.ToColombo(DateTime.UtcNow));
 }
 <h1>Staff management</h1>
@@ -15,12 +19,12 @@
 @if (Model.Admin) { <a href="/Staff">Employee directory</a> <span> | </span> <a href="/Staff/Reports">Reports</a> <span> | </span> }
 <a href="/Staff/My">My profile, attendance and leave</a>
 </nav>
-@if (ViewData["StaffCounts"] is IReadOnlyDictionary<string, int> dashboardCounts)
+@if (totalCounts is { } dashboardCounts)
 {
     <h2>Staff overview</h2>
     <dl class="row">
     @foreach (var count in dashboardCounts) { <dt class="col-sm-4">@count.Key</dt><dd class="col-sm-8">@count.Value</dd> }
-    @foreach (var count in (StaffDepartmentCount[])ViewData["StaffDepartmentCounts"]!)
+    @foreach (var count in departmentCounts)
     { <dt class="col-sm-4">@count.Name employees</dt><dd class="col-sm-8">@count.Count</dd> }
     </dl>
 }
@@ -37,9 +41,9 @@
     </form>
     <ul class="list-group mb-3">
     @foreach (var row in Model.Employees)
-    { <li class="list-group-item"><a href="/Staff/Employees/@row.Id">@row.Name</a> ? @row.Number ? @row.JobTitle ? @(row.Active ? "Active" : "Inactive")</li> }
+    { <li class="list-group-item"><a href="/Staff/Employees/@row.Id">@row.Name</a> | @row.Number | @row.JobTitle | @(row.Active ? "Active" : "Inactive")</li> }
     </ul>
-    @if (Model.Employees.Length == 0) { <p class="hms-empty">No employees match these filters.</p> }
+    @if (Model.Employees.Length == 0) { <p class="hms-empty">@(emptyDirectory ? "No staff members have been registered yet." : "No employees match these filters.")</p> }
     @if (employee is null)
     {
         var query = Context.Request.Query.Where(x => !x.Key.Equals("page", StringComparison.OrdinalIgnoreCase))
@@ -56,7 +60,7 @@
 
     }
     <details class="border rounded p-3 mb-3 d-print-none" open="@(employee != null)">
-        <summary>@(employee == null ? "Register employee" : "Edit employee")</summary>
+        <summary>@(employee == null ? "Add Staff" : "Edit employee")</summary>
         <form asp-action="Save" asp-route-id="@employee?.Id" method="post" class="row g-2 mt-2">
             <input type="hidden" name="Token" value="@employee?.Token" />
             <label class="col-md-4">Full name <input name="Name" value="@employee?.Name" required maxlength="120" class="form-control" /></label>
@@ -77,10 +81,10 @@
 @if (employee != null)
 {
     <h2 class="h4">@employee.Name</h2>
-    <p>@employee.Number ? @employee.JobTitle ? @employee.WorkEmail</p>
+    <p>@employee.Number | @employee.JobTitle | @employee.WorkEmail</p>
     <h3 class="h5">Department assignments</h3>
     @foreach (var assignment in Model.Departments)
-    { <p>@assignment.Department.Name ? @Local(assignment.FromUtc) to @(assignment.UntilUtc is DateTime end ? Local(end) : "Current")</p> }
+    { <p>@assignment.Department.Name | @Local(assignment.FromUtc) to @(assignment.UntilUtc is DateTime end ? Local(end) : "Current")</p> }
     @if (Model.Admin)
     {
         <form asp-action="Transfer" asp-route-id="@employee.Id" method="post" class="row g-2 mb-3 d-print-none">
@@ -114,9 +118,9 @@
 {
     var row = Model.Employees.First(e => e.Id == session.EmployeeId);
     <article class="border rounded p-2 mb-2">
-        <p>@row.Name ? @Local(session.InUtc) ? @(session.OutUtc is DateTime end ? $"{Local(end)} ? {(end-session.InUtc).TotalHours:0.00} hours" : "Clocked in")</p>
+        <p>@row.Name | @Local(session.InUtc) | @(session.OutUtc is DateTime end ? $"{Local(end)} | {(end-session.InUtc).TotalHours:0.00} hours" : "Clocked in")</p>
         @foreach (var correction in ((StaffAttendanceCorrection[])ViewData["Corrections"]!).Where(c => c.AttendanceId == session.Id))
-        { <p>Correction @Local(correction.AtUtc) ? Original @Local(correction.PriorInUtc) to @(correction.PriorOutUtc is DateTime old ? Local(old) : "Open") ? Revised @Local(correction.InUtc) to @Local(correction.OutUtc)</p> }
+        { <p>Correction @Local(correction.AtUtc) | Original @Local(correction.PriorInUtc) to @(correction.PriorOutUtc is DateTime old ? Local(old) : "Open") | Revised @Local(correction.InUtc) to @Local(correction.OutUtc)</p> }
         @if (Model.Admin && session.OutUtc.HasValue)
         {
             <details class="d-print-none"><summary>Correct timestamps</summary>
@@ -162,7 +166,7 @@ else
 @foreach (var request in Model.Leave)
 {
     <article class="border rounded p-2 mb-2">
-        <p>@Model.Employees.First(e => e.Id == request.EmployeeId).Name ? @request.Type.Name ? @request.From to @request.Through ? @request.Status</p>
+        <p>@Model.Employees.First(e => e.Id == request.EmployeeId).Name | @request.Type.Name | @request.From to @request.Through | @request.Status</p>
         @if (!Model.Admin || employee != null) { <p class="d-print-none">@request.Reason</p> }
         @if (((StaffLeaveDecision[])ViewData["Decisions"]!).SingleOrDefault(d => d.RequestId == request.Id) is { } decision)
         { <p>Decision @Local(decision.AtUtc) @if (!Model.Admin || employee != null) { <span>@decision.Reason</span> }</p> }

@@ -42,8 +42,7 @@ public sealed class StaffController(StaffService staff, HospitalDbContext db) : 
                     ["Currently clocked in"] = await db.Set<StaffAttendance>().CountAsync(x => x.OutUtc == null, ct),
                     ["Pending leave"] = await db.Set<StaffLeaveRequest>().CountAsync(x => x.Status == StaffLeaveStatus.Pending, ct)
                 };
-                ViewData["StaffDepartmentCounts"] = await db.Set<StaffDepartment>().Where(x => x.UntilUtc == null)
-                    .GroupBy(x => x.Department.Name).Select(g => new StaffDepartmentCount(g.Key, g.Count())).OrderBy(x => x.Name).ToArrayAsync(ct);
+                ViewData["StaffDepartmentCounts"] = await StaffService.CurrentDepartmentCounts(db).ToArrayAsync(ct);
             }
             var selected = admin ? id.HasValue ? await staff.EmployeeAsync(id.Value, ct) : null : await staff.Mine(User, ct);
             if (!admin && id.HasValue && selected?.Id != id) return Forbid();

@@ -35,7 +35,7 @@ else
     @foreach (var batch in Model.Rows)
     {
         <tr><td><a asp-action="Adjust" asp-route-id="@batch.Id">@batch.Number</a></td>
-            <td>@batch.Medicine.GenericName ? @batch.Medicine.Code</td>
+            <td>@batch.Medicine.GenericName | @batch.Medicine.Code</td>
             <td>@batch.ReceivedQuantity.ToString("0.###") @batch.Unit</td><td>@batch.Available.ToString("0.###") @batch.Unit</td>
             <td>@batch.Expiry.ToString("dd MMM yyyy")</td><td>@batch.Status @if (batch.Expiry < HospitalManagementSystem.Web.Services.Clinical.ClinicalRecordService.LocalToday) { <span class="badge text-bg-danger">Expired</span> }</td></tr>
     }

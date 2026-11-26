@@ -11,7 +11,7 @@
         <label>Patient <select name="patientId" required class="form-select">
             <option value="">Select a patient</option>
             @foreach (var patient in Model.Patients)
-            { <option value="@patient.Id" selected="@(input.PatientId == patient.Id)">@patient.Number ? @patient.Name</option> }
+            { <option value="@patient.Id" selected="@(input.PatientId == patient.Id)">@patient.Number | @patient.Name</option> }
         </select></label>
         <button class="btn btn-outline-primary">Load patient?s charge sources</button>
     </form>
@@ -19,7 +19,7 @@
 @if (input.PatientId != Guid.Empty)
 {
     var selectedPatient = Model.Patients.SingleOrDefault(item => item.Id == input.PatientId);
-    <p>@selectedPatient?.Number ? @selectedPatient?.Name</p>
+    <p>@selectedPatient?.Number | @selectedPatient?.Name</p>
     @if (input.ReplacesId.HasValue) { <p>Replacement for a voided invoice.</p> }
     <form asp-action="SaveDraft" asp-route-id="@Model.Id" method="post" data-billing-form>
         <div asp-validation-summary="All" class="text-danger" role="alert"></div>
@@ -42,14 +42,14 @@
                             <option value="@Guid.Empty">Choose a service</option>
                             @foreach (var service in Model.Services)
                             {
-                                <option value="@service.Id" selected="@(line.ServiceId == service.Id)" data-category="@service.Category" data-code="@service.SourceCode">@service.Code ? @service.Name</option>
+                                <option value="@service.Id" selected="@(line.ServiceId == service.Id)" data-category="@service.Category" data-code="@service.SourceCode">@service.Code | @service.Name</option>
                             }
                         </select></label>
                         <label class="col-md-5">Clinical source <select name="@(prefix).SourceId" class="form-select" data-billing-source>
                             <option value="">None (manual Other service)</option>
                             @foreach (var source in Model.Sources)
                             {
-                                <option value="@source.Id" selected="@(line.SourceId == source.Id)" data-category="@source.Category" data-code="@source.Code" data-quantity="@source.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)">@source.Category ? @source.Reference @source.Code ? @source.ServiceDate.ToString("yyyy-MM-dd") ? quantity @source.Quantity.ToString("0.###")</option>
+                                <option value="@source.Id" selected="@(line.SourceId == source.Id)" data-category="@source.Category" data-code="@source.Code" data-quantity="@source.Quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)">@source.Category | @source.Reference @source.Code | @source.ServiceDate.ToString("yyyy-MM-dd") | quantity @source.Quantity.ToString("0.###")</option>
                             }
                         </select></label>
                         <label class="col-md-3">Quantity <input name="@(prefix).Quantity" value="@line.Quantity.ToString("0.###")" inputmode="decimal" class="form-control" data-billing-quantity /></label>
