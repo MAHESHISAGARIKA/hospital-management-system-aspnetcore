@@ -5,7 +5,7 @@
 }
 <h1 class="h3">@ViewData["Title"]</h1>
 <partial name="_Messages" /><partial name="_Links" />
-<form method="get" asp-action="Inventory" class="row g-2 mb-3 d-print-none">
+<form method="get" asp-action="Inventory" class="hms-filter row g-2 mb-3 d-print-none">
     <label class="col-md-3">Batch or medicine <input name="Search" value="@filter.Search" maxlength="100" class="form-control" /></label>
     <label class="col-md-2">Expiry from <input type="date" name="From" value="@(filter.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
     <label class="col-md-2">Expiry to <input type="date" name="To" value="@(filter.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
@@ -28,7 +28,7 @@
     <p><strong>Expired stock in these filters</strong>
     @string.Join(" ? ", totals.OrderBy(total => total.Key).Select(total => $"{total.Value:0.###} {total.Key}"))</p>
 }
-@if (Model.Rows.Count == 0) { <p>No batches match these filters.</p> }
+@if (Model.Rows.Count == 0) { <p class="hms-empty">No batches match these filters.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Batch</th><th>Medicine</th><th>Received</th><th>Balance</th><th>Expiry</th><th>Status</th></tr></thead><tbody>

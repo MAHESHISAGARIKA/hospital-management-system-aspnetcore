@@ -1,5 +1,5 @@
 @model PharmacyFilter
-<form method="get" class="row g-2 mb-3 d-print-none">
+<form method="get" class="hms-filter row g-2 mb-3 d-print-none">
     <label class="col-md-3">From <input type="date" name="From" value="@(Model.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
     <label class="col-md-3">To <input type="date" name="To" value="@(Model.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
     @if (!string.Equals(ViewContext.RouteData.Values["action"]?.ToString(), "Consumption", StringComparison.Ordinal))

@@ -27,7 +27,7 @@
 @if (Model.Admin)
 {
     var accounts = (ApplicationUser[])ViewData["Accounts"]!;
-    <form method="get" action="/Staff" class="row g-2 mb-3 d-print-none">
+    <form method="get" action="/Staff" class="hms-filter row g-2 mb-3 d-print-none">
         <label class="col-md-4">Name, number or job title <input name="search" value="@Context.Request.Query["search"]" class="form-control" /></label>
         <label class="col-md-3">Department <select name="department" class="form-select"><option value="">All</option>
             @foreach (var choice in choices) { <option value="@choice.Id" selected="@(Context.Request.Query["department"] == choice.Id.ToString())">@choice.Name</option> }
@@ -39,7 +39,7 @@
     @foreach (var row in Model.Employees)
     { <li class="list-group-item"><a href="/Staff/Employees/@row.Id">@row.Name</a> ? @row.Number ? @row.JobTitle ? @(row.Active ? "Active" : "Inactive")</li> }
     </ul>
-    @if (Model.Employees.Length == 0) { <p>No employees match these filters.</p> }
+    @if (Model.Employees.Length == 0) { <p class="hms-empty">No employees match these filters.</p> }
     @if (employee is null)
     {
         var query = Context.Request.Query.Where(x => !x.Key.Equals("page", StringComparison.OrdinalIgnoreCase))
@@ -95,7 +95,7 @@
 }
 <h2 class="h4">Attendance</h2>
 <p>Times use Asia/Colombo. Durations use the saved clock timestamps.</p>
-<form method="get" action="@(Model.Admin ? employee != null ? $"/Staff/Employees/{employee.Id}" : "/Staff" : "/Staff/My")" class="d-flex gap-2 mb-3 d-print-none">
+<form method="get" action="@(Model.Admin ? employee != null ? $"/Staff/Employees/{employee.Id}" : "/Staff" : "/Staff/My")" class="hms-filter d-flex gap-2 mb-3 d-print-none">
     <label>Local date <input name="date" type="date" value="@Context.Request.Query["date"]" class="form-control" /></label>
     <label>Leave status <select name="status" class="form-select"><option value="">All</option>
         @foreach (var state in Enum.GetValues<StaffLeaveStatus>()) { <option selected="@(Context.Request.Query["status"] == state.ToString())">@state</option> }
@@ -109,7 +109,7 @@
         <form asp-action="ClockOut" method="post"><button class="btn btn-outline-primary">Clock out</button></form>
     </div>
 }
-@if (Model.Attendance.Length == 0) { <p>No attendance records match.</p> }
+@if (Model.Attendance.Length == 0) { <p class="hms-empty">No attendance records match.</p> }
 @foreach (var session in Model.Attendance)
 {
     var row = Model.Employees.First(e => e.Id == session.EmployeeId);
@@ -158,7 +158,7 @@ else
         <div class="col-md-2 align-self-end"><button class="btn btn-primary">Request leave</button></div>
     </form>
 }
-@if (Model.Leave.Length == 0) { <p>No leave requests match.</p> }
+@if (Model.Leave.Length == 0) { <p class="hms-empty">No leave requests match.</p> }
 @foreach (var request in Model.Leave)
 {
     <article class="border rounded p-2 mb-2">

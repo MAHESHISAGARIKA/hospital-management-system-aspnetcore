@@ -2,7 +2,7 @@
 @{ ViewData["Title"] = "Billing reports"; var filter = Model.Filter; }
 <h1 class="h3">Billing reports</h1>
 <partial name="_Links" />
-<form asp-action="Reports" method="get" class="row g-2 mb-3 d-print-none">
+<form asp-action="Reports" method="get" class="hms-filter row g-2 mb-3 d-print-none">
     <label class="col-md-2">From <input name="From" type="date" value="@(filter.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
     <label class="col-md-2">To <input name="To" type="date" value="@(filter.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
     <label class="col-md-2">Payment method <select name="Method" class="form-select"><option value="">All</option>
@@ -23,7 +23,7 @@
     ("Issued billing totals by category", Model.Invoiced) })
 {
     <section class="col-lg-4"><h2 class="h5">@group.Item1</h2>
-        @if (group.Item2.Count == 0) { <p>No entries in this range.</p> }
+        @if (group.Item2.Count == 0) { <p class="hms-empty">No entries in this range.</p> }
         <ul class="list-unstyled">
         @foreach (var total in group.Item2)
         { <li class="border-bottom py-1">@total.Label ? LKR @total.Amount.ToString("N2") ? @total.Count entries</li> }
@@ -32,7 +32,7 @@
 }
 </div>
 <h2 class="h5">@(filter.Reversed ? "Payment reversals" : "Payment and receipt activity")</h2>
-@if (Model.Payments.Rows.Count == 0) { <p>No payment records match.</p> }
+@if (Model.Payments.Rows.Count == 0) { <p class="hms-empty">No payment records match.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Receipt</th><th>Invoice</th><th>Amount (LKR)</th><th>Method</th><th>Date</th><th>State</th></tr></thead><tbody>

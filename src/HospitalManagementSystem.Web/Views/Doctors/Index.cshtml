@@ -3,23 +3,23 @@
     ViewData["Title"] = "Doctor directory";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Doctor directory</h1>
     @if (User.IsInRole("Administrator")) { <a asp-action="Create" class="btn btn-primary">Register doctor</a> }
 </div>
 
-<form method="get" class="row g-2 mb-3">
-    <div class="col-md-4"><input name="Search" value="@Model.Search" class="form-control" placeholder="Doctor name" /></div>
+<form method="get" class="hms-filter row g-2 mb-3">
+    <div class="col-md-4"><input name="Search" aria-label="Doctor name" value="@Model.Search" class="form-control" placeholder="Doctor name" /></div>
     @if (User.IsInRole("Administrator"))
     {
-        <div class="col-md-2"><input name="DoctorNumber" value="@Model.DoctorNumber" class="form-control" placeholder="Doctor number" /></div>
-        <div class="col-md-2"><input name="RegistrationNumber" value="@Model.RegistrationNumber" class="form-control" placeholder="Registration number" /></div>
+        <div class="col-md-2"><input name="DoctorNumber" aria-label="Doctor number" value="@Model.DoctorNumber" class="form-control" placeholder="Doctor number" /></div>
+        <div class="col-md-2"><input name="RegistrationNumber" aria-label="Registration number" value="@Model.RegistrationNumber" class="form-control" placeholder="Registration number" /></div>
     }
-    <div class="col-md-2"><select name="DepartmentId" class="form-select"><option value="">All departments</option>@foreach (var department in Model.Departments) { <option value="@department.Id" selected="@(Model.DepartmentId == department.Id)">@department.Name</option> }</select></div>
+    <div class="col-md-2"><select name="DepartmentId" aria-label="Department" class="form-select"><option value="">All departments</option>@foreach (var department in Model.Departments) { <option value="@department.Id" selected="@(Model.DepartmentId == department.Id)">@department.Name</option> }</select></div>
     <div class="col-md-2"><button type="submit" class="btn btn-outline-primary w-100">Search</button></div>
 </form>
 
-@if (Model.Doctors.Count == 0) { <div class="alert alert-light border">No doctors matched the selected criteria.</div> }
+@if (Model.Doctors.Count == 0) { <div class="hms-empty">No doctors matched the selected criteria.</div> }
 else
 {
     <div class="table-responsive"><table class="table table-striped align-middle"><thead><tr><th>Doctor number</th><th>Name</th><th>Department</th><th>Specialization</th><th>Status</th><th></th></tr></thead><tbody>

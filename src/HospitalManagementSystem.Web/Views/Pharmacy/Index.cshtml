@@ -15,7 +15,7 @@
 </div>
 <div class="row g-3">
     <section class="col-lg-6"><h2 class="h5">Eligible stock</h2>
-        @if (Model.Stock.Count == 0) { <p>No active medicines.</p> }
+        @if (Model.Stock.Count == 0) { <p class="hms-empty">No active medicines.</p> }
         @foreach (var row in Model.Stock)
         {
             <div class="border-bottom py-2 d-flex justify-content-between gap-2">
@@ -24,7 +24,7 @@
         }
     </section>
     <section class="col-lg-6"><h2 class="h5">Recent stock movements</h2>
-        @if (Model.Recent.Count == 0) { <p>No stock movements.</p> }
+        @if (Model.Recent.Count == 0) { <p class="hms-empty">No stock movements.</p> }
         @foreach (var movement in Model.Recent)
         {
             <div class="border-bottom py-2">@movement.Batch.Medicine.GenericName ? @movement.Kind ? @movement.Quantity.ToString("0.###") @movement.Unit</div>

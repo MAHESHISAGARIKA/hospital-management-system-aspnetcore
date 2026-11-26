@@ -6,7 +6,7 @@
     <a asp-action="Visits" class="btn btn-sm btn-outline-primary">Visit history</a>
     <a asp-controller="Appointments" asp-action="Index" class="btn btn-sm btn-outline-primary">Appointments</a>
 </nav>
-<form asp-action="Visits" method="get" class="row g-2 mb-3 d-print-none">
+<form asp-action="Visits" method="get" class="hms-filter row g-2 mb-3 d-print-none">
     <label class="col-md-3">Appointment or patient <input name="Search" value="@Model.Search" class="form-control" maxlength="100" /></label>
     <label class="col-md-2">Date (Asia/Colombo) <input name="Date" type="date" value="@(Model.Date?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
     <label class="col-md-2">Doctor <select name="DoctorId" class="form-select"><option value="">All permitted</option>
@@ -18,7 +18,7 @@
     <div class="col-md-1 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
 </form>
 <partial name="~/Views/Inpatients/_Print.cshtml" />
-@if (Model.Appointments.Count == 0) { <p>No visits match these filters.</p> }
+@if (Model.Appointments.Count == 0) { <p class="hms-empty">No visits match these filters.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Appointment</th><th>Patient</th><th>Doctor</th><th>Department</th><th>Time</th><th>Status</th></tr></thead><tbody>

@@ -6,7 +6,7 @@
 {
     <section class="mb-4"><h2 class="h5">Current ward occupancy</h2><partial name="_Census" model="census" /></section>
 }
-<form asp-action="Index" method="get" class="row g-2 mb-3 d-print-none">
+<form asp-action="Index" method="get" class="hms-filter row g-2 mb-3 d-print-none">
     <label class="col-md-3">Admission or patient number <input name="Search" value="@filter.Search" maxlength="100" class="form-control" /></label>
     <label class="col-md-2">From <input type="date" name="From" value="@(filter.From?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
     <label class="col-md-2">To <input type="date" name="To" value="@(filter.To?.ToString("yyyy-MM-dd"))" class="form-control" /></label>
@@ -22,7 +22,7 @@
     <label class="col-md-2 align-self-end"><input type="checkbox" name="Oldest" value="true" checked="@filter.Oldest" /> Oldest first</label>
     <div class="col-md-2 align-self-end"><button class="btn btn-outline-primary">Filter</button></div>
 </form>
-@if (Model.Rows.Count == 0) { <p>No admissions match these filters.</p> }
+@if (Model.Rows.Count == 0) { <p class="hms-empty">No admissions match these filters.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Admission</th><th>Patient</th><th>Doctor</th><th>Ward / bed</th><th>Status</th><th>Recorded (Asia/Colombo)</th><th>Length of stay</th></tr></thead><tbody>

@@ -1,8 +1,25 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Home";
 }
-
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="hms-hero" aria-labelledby="home-heading">
+    <div class="hms-hero-copy">
+        <h1 id="home-heading">Hospital<br class="d-none d-md-block" /> Management System</h1>
+        <p>Manage patient care, appointments, and hospital operations in one secure workspace.</p>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a class="btn btn-primary btn-lg" asp-controller="Dashboard" asp-action="Index">Open dashboard <span aria-hidden="true">?</span></a>
+        }
+        else
+        {
+            <a class="btn btn-primary btn-lg" asp-controller="Account" asp-action="Login">Sign in <span aria-hidden="true">?</span></a>
+        }
+    </div>
+    <div class="hms-hero-panel">
+        <h2>Hospital workflows</h2>
+        <ul class="list-unstyled mb-0">
+            <li><span class="hms-feature-icon" aria-hidden="true">?</span><div><strong>Patient care</strong><p>Patient records, appointments, and clinical visits</p></div></li>
+            <li><span class="hms-feature-icon" aria-hidden="true">?</span><div><strong>Laboratory and pharmacy</strong><p>Lab requests, medicine inventory, and dispensing</p></div></li>
+            <li><span class="hms-feature-icon" aria-hidden="true">?</span><div><strong>Hospital operations</strong><p>Staff, billing, inpatient care, and reporting</p></div></li>
+        </ul>
+    </div>
+</section>

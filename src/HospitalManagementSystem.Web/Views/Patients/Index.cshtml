@@ -3,7 +3,7 @@
     ViewData["Title"] = "Patient directory";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Patient directory</h1>
     @if (User.IsInRole("Administrator") || User.IsInRole("Receptionist"))
     {
@@ -16,16 +16,16 @@
     <div class="alert alert-success">@message</div>
 }
 
-<form method="get" class="row g-2 mb-3">
-    <div class="col-md-5"><input name="Search" value="@Model.Search" class="form-control" placeholder="Patient number or name" /></div>
-    <div class="col-md-3"><select name="Gender" class="form-select"><option value="">All genders</option>@foreach (var gender in new[] { "Female", "Male", "Intersex", "Unknown", "Prefer not to say" }) { <option value="@gender" selected="@(Model.Gender == gender)">@gender</option> }</select></div>
-    <div class="col-md-2"><select name="IsActive" class="form-select"><option value="">All statuses</option><option value="true" selected="@(Model.IsActive == true)">Active</option><option value="false" selected="@(Model.IsActive == false)">Archived</option></select></div>
+<form method="get" class="hms-filter row g-2 mb-3">
+    <div class="col-md-5"><input name="Search" aria-label="Patient name or number" value="@Model.Search" class="form-control" placeholder="Patient number or name" /></div>
+    <div class="col-md-3"><select name="Gender" aria-label="Gender" class="form-select"><option value="">All genders</option>@foreach (var gender in new[] { "Female", "Male", "Intersex", "Unknown", "Prefer not to say" }) { <option value="@gender" selected="@(Model.Gender == gender)">@gender</option> }</select></div>
+    <div class="col-md-2"><select name="IsActive" aria-label="Patient status" class="form-select"><option value="">All statuses</option><option value="true" selected="@(Model.IsActive == true)">Active</option><option value="false" selected="@(Model.IsActive == false)">Archived</option></select></div>
     <div class="col-md-2"><button class="btn btn-outline-primary w-100" type="submit">Search</button></div>
 </form>
 
 @if (Model.Patients.Count == 0)
 {
-    <div class="alert alert-light border">No patients matched the selected criteria.</div>
+    <div class="hms-empty">No patients matched the selected criteria.</div>
 }
 else
 {

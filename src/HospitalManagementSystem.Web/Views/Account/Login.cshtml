@@ -2,32 +2,32 @@
 @{
     ViewData["Title"] = "Login";
 }
-
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow-sm mt-4">
-            <div class="card-body p-4">
-                <h1 class="h3 mb-3">Sign in</h1>
-                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-                <form asp-action="Login" asp-controller="Account" method="post">
-                    <input asp-for="ReturnUrl" type="hidden" />
-                    <div class="mb-3">
-                        <label asp-for="Email" class="form-label"></label>
-                        <input asp-for="Email" class="form-control" autocomplete="username" />
-                        <span asp-validation-for="Email" class="text-danger"></span>
-                    </div>
-                    <div class="mb-3">
-                        <label asp-for="Password" class="form-label"></label>
-                        <input asp-for="Password" class="form-control" autocomplete="current-password" />
-                        <span asp-validation-for="Password" class="text-danger"></span>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input asp-for="RememberMe" class="form-check-input" />
-                        <label asp-for="RememberMe" class="form-check-label"></label>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Sign in</button>
-                </form>
+<section class="hms-login-wrap" aria-labelledby="login-heading">
+    <div class="card hms-login">
+        <span class="hms-brand-mark" aria-hidden="true">+</span>
+        <h1 id="login-heading">Sign in</h1>
+        <p class="hms-muted">Use your hospital account to access your workspace.</p>
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+        <form asp-action="Login" asp-controller="Account" method="post">
+            <input asp-for="ReturnUrl" type="hidden" />
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" autocomplete="username" aria-describedby="email-error" />
+                <span asp-validation-for="Email" id="email-error" class="text-danger"></span>
             </div>
-        </div>
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <div class="input-group">
+                    <input asp-for="Password" class="form-control" autocomplete="current-password" aria-describedby="password-error" />
+                    <button class="btn btn-outline-secondary" type="button" data-password-toggle aria-controls="Password" hidden>Show password</button>
+                </div>
+                <span asp-validation-for="Password" id="password-error" class="text-danger"></span>
+            </div>
+            <div class="form-check mb-4">
+                <input asp-for="RememberMe" class="form-check-input" />
+                <label asp-for="RememberMe" class="form-check-label"></label>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Sign in</button>
+        </form>
     </div>
-</div>
+</section>

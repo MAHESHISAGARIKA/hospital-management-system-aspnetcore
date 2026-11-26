@@ -42,7 +42,7 @@ else { <partial name="_Navigation" /> }
     </div></section>
 }
 <section class="mb-3"><h2 class="h5">Bed allocation and transfer history</h2>
-@if (stay.Allocations.Count == 0) { <p>No bed has been allocated.</p> }
+@if (stay.Allocations.Count == 0) { <p class="hms-empty">No bed has been allocated.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Ward</th><th>Bed</th><th>Start (Asia/Colombo)</th><th>End</th>
@@ -76,7 +76,7 @@ else
 {
     var action = active ? "Transfer" : "Allocate";
     <section class="card mb-3"><div class="card-body"><h2 class="h5">@(active ? "Transfer to a new bed" : "Admit and allocate a bed")</h2>
-    @if (Model.Available.Count == 0) { <p>No beds are ready for allocation.</p> }
+    @if (Model.Available.Count == 0) { <p class="hms-empty">No beds are ready for allocation.</p> }
     else
     {
         <form asp-action="@action" asp-route-id="@stay.Id" method="post" class="row g-2" data-stay-form data-confirm="Confirm the bed and patient before continuing.">
@@ -119,7 +119,7 @@ else
 {
     <section class="card mb-3"><div class="card-body"><h2 class="h5">Observations</h2>
         @if (canWork) { <partial name="_Observation" model="(stay.Id, stay.Token, (InpatientObservation?)null)" /> }
-        @if (stay.Observations.Count == 0) { <p>No observations recorded.</p> }
+        @if (stay.Observations.Count == 0) { <p class="hms-empty">No observations recorded.</p> }
         @foreach (var value in stay.Observations.OrderByDescending(o => o.RecordedAtUtc))
         {
             var superseded = stay.Observations.Any(o => o.CorrectsId == value.Id);

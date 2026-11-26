@@ -2,15 +2,21 @@
 @{
     ViewData["Title"] = "Dashboard";
 }
-<h1>Hospital Dashboard</h1>
+<header class="hms-dashboard-header">
+    <div>
+        <h1>Hospital Dashboard</h1>
+        <p class="mb-0">Welcome, <strong>@ViewData["AccountEmail"]</strong></p>
+    </div>
+    <div class="hms-dashboard-actions d-print-none">
+        @if (User.IsInRole("Administrator"))
+        {
+            <a asp-controller="Users" asp-action="Index" class="btn btn-outline-primary">Manage users</a>
+        }
+        <a asp-controller="Reports" asp-action="Index" class="btn btn-primary">Open reports <span aria-hidden="true">?</span></a>
+    </div>
+</header>
 @if (TempData["StatusMessage"] is string statusMessage)
 {
-    <div class="alert alert-success">@statusMessage</div>
-}
-<p class="d-print-none">Signed in as <strong>@ViewData["AccountEmail"]</strong></p>
-<p class="d-print-none">Roles: @ViewData["AccountRoles"]</p>
-@if (User.IsInRole("Administrator"))
-{
-    <a asp-controller="Users" asp-action="Index" class="btn btn-outline-primary mb-3 d-print-none">Manage users</a>
+    <div class="alert alert-success" role="status">@statusMessage</div>
 }
 <partial name="_HospitalReport" model="Model" />

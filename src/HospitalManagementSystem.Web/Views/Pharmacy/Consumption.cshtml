@@ -2,7 +2,7 @@
 @{ ViewData["Title"] = "Medicine consumption"; var filter = (PharmacyFilter)ViewData["Filter"]!; }
 <h1 class="h3">Medicine consumption</h1>
 <partial name="_Links" /><partial name="_Messages" /><partial name="_ReportFilters" model="filter" /><partial name="_Print" />
-@if (Model.Count == 0) { <p>No recorded dispensing in this range.</p> }
+@if (Model.Count == 0) { <p class="hms-empty">No recorded dispensing in this range.</p> }
 else
 {
     <div class="table-responsive"><table class="table"><thead><tr><th>Code</th><th>Medicine</th><th>Dispensed quantity</th></tr></thead><tbody>
