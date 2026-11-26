@@ -25,7 +25,7 @@ Review the script and archive a tested backup of the intended database plus pati
 | `PatientDocuments__StorageRoot` | Absolute path to protected, writable patient document storage outside the web root. |
 | `Logging__LogLevel__Default` | Use a controlled level and restrict access to logs. |
 
-Configure the HTTPS certificate at IIS or the reverse proxy, bind Kestrel to a private endpoint, and preserve the original HTTPS scheme through the trusted hop. Restrict file permissions on the publish directory, secret store, document storage and key ring. Grant runtime write permissions only where required. Persist and back up the key ring independently. Configuring a new key repository or changing the application discriminator may require users to sign in again. An existing Identity Administrator must be available before rollout. The existing interactive first-admin command is Development-only, so a brand-new production installation needs an approved provisioning procedure before release.
+Configure the HTTPS certificate at IIS or the reverse proxy, bind Kestrel to a private endpoint, and preserve the original HTTPS scheme through the trusted hop. Restrict file permissions on the publish directory, secret store, document storage and key ring. Grant runtime write permissions only where required. Persist and back up the key ring independently. Configuring a new key repository or changing the application discriminator may require users to sign in again. An existing Identity Administrator must be available before rollout. Use the explicit interactive [Administrator bootstrap](railway-deployment.md#provision-the-first-administrator) for the Railway demonstration database.
 
 ## Smoke tests and rollback
 
